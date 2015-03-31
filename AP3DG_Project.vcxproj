@@ -84,12 +84,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="glViewer.cpp" />
+    <ClCompile Include="GLViewer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PolyMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="glViewer.h" />
+    <ClInclude Include="GLViewer.h" />
     <ClInclude Include="PolyMesh.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

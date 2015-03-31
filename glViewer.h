@@ -15,6 +15,8 @@
 #define LOWER_D 100
 #define UPPER_E 69
 #define LOWER_E 101
+#define UPPER_F 70
+#define LOWER_F 102
 #define UPPER_M 77
 #define LOWER_M 109
 #define UPPER_Q 81
@@ -28,27 +30,46 @@
 #define UPPER_W 87
 #define LOWER_W 119
 //=============================================================================
-const static bool READ_VERTEX_COLORS = false;
-const static bool WRITE_RESULT = true;
-
-static char* PLY_FILENAME = "./_models/sphere.ply";
-
 using namespace std;
 //=============================================================================
-int moving, beginx, beginy;
-GLfloat anglex = 0;   /* in degrees */
-GLfloat angley = 0;   /* in degrees */
-
-GLfloat light_diffuse[] = { 1.0, 0.0, 0.0, 1.0 };  /* Red diffuse light. */
-GLfloat light_ambient[] = { 0.1, 0.1, 0.1, 1.0 };  /* Grey ambient light. */
-GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };  /* Infinite light location. */
-
-GLfloat background_colour[] = { 0.5f, 0.5f, 0.5f, 0.0f };  /* Background colour. */
-
-GLfloat eye[3] = { 0.0f, 0.0f, 5.0f };
-GLfloat center[3] = { 0.0f, 0.0f, 0.0f };
-
-PolyMesh mesh;
+const static char* WINDOW_TITLE = "AP3DG";
+const static int WINDOW_WIDTH = 800;
+const static int WINDOW_HEIGHT = 800;
 //=============================================================================
-void initViewer(int *argcp, char **argv);
+class GLViewer
+{
+public:
+	static int moving, beginx, beginy;
+	static GLfloat eye[3];
+	static GLfloat center[3];
+	static GLfloat fieldView;
+	static GLfloat aspectRatio;
+	static GLfloat depthNear, depthFar;
+
+	static GLfloat anglex;   /* in degrees */
+	static GLfloat angley;   /* in degrees */
+
+	static GLfloat light_diffuse[4];  /* Red diffuse light. */
+	static GLfloat light_ambient[4];  /* Grey ambient light. */
+	static GLfloat light_position[4];  /* Infinite light location. */
+
+	static GLfloat background_colour[4];  /* Background colour. */
+
+	static PolyMesh mesh;
+
+	//=========================================================================
+	static void initialize(int *argcp, char **argv);
+
+	static void setMesh(PolyMesh& _mesh);
+
+	static void drawModel(void);
+	static void display(void);
+	static void mouse(int button, int state, int x, int y);
+	static void motion(int x, int y);
+	static void init(void);
+
+	static void Key(unsigned char key, int x, int y);
+
+	static void run();
+};
 //=============================================================================
