@@ -9,6 +9,7 @@ implied. This program is -not- in the public domain. */
 /* MACOS compile: g++ cube.c -framework OpenGL -framework glut */
 
 //#include "glViewer.h"
+#include "pca.h"
 
 using namespace std;
 //=============================================================================
@@ -16,6 +17,7 @@ int main(int argc, char **argv)
 {
 	//initViewer(&argc, argv);
 	//glutMainLoop();
+	pca();
 
 	return 0;
 }
