@@ -11,6 +11,8 @@
 //=============================================================================
 #define UPPER_A 65
 #define LOWER_A 97
+#define UPPER_C 67
+#define LOWER_C 99
 #define UPPER_D 68
 #define LOWER_D 100
 #define UPPER_E 69
@@ -31,17 +33,33 @@
 #define LOWER_W 119
 //=============================================================================
 using namespace std;
-//=============================================================================
-const static char* WINDOW_TITLE = "AP3DG";
-const static int WINDOW_WIDTH = 800;
-const static int WINDOW_HEIGHT = 800;
+using namespace Eigen;
 //=============================================================================
 class GLViewer
 {
-public:
+private:
+	const static char* WINDOW_TITLE;
+	const static int WINDOW_WIDTH;
+	const static int WINDOW_HEIGHT;
+
+	const static GLfloat EYE_ZOOM_INCR;
+	const static GLfloat EYE_ANGLE_INCR;
+
+	const static GLfloat RADIUS_OFFSET;
+	const static GLint CIRCLE_NUM_LINES;
+	const static Vector3f CIRCLE_XY_COLOR;
+	const static Vector3f CIRCLE_XZ_COLOR;
+	const static Vector3f CIRCLE_YZ_COLOR;
+
+	const static Vector3f GLViewer::MODEL_COLOR;
+
 	static int moving, beginx, beginy;
-	static GLfloat eye[3];
-	static GLfloat center[3];
+	static Vector3f eye;
+	static GLfloat eyeDistance;
+	static Matrix3f eyeRotation;
+	static Vector3f center;
+	static Vector3f up;
+	static GLfloat radius;
 	static GLfloat fieldView;
 	static GLfloat aspectRatio;
 	static GLfloat depthNear, depthFar;
@@ -49,27 +67,30 @@ public:
 	static GLfloat anglex;   /* in degrees */
 	static GLfloat angley;   /* in degrees */
 
-	static GLfloat light_diffuse[4];  /* Red diffuse light. */
 	static GLfloat light_ambient[4];  /* Grey ambient light. */
 	static GLfloat light_position[4];  /* Infinite light location. */
 
 	static GLfloat background_colour[4];  /* Background colour. */
 
 	static PolyMesh mesh;
+	static bool showCircles;
 
 	//=========================================================================
-	static void initialize(int *argcp, char **argv);
 
-	static void setMesh(PolyMesh& _mesh);
-
+	static void init(void);
 	static void drawModel(void);
 	static void display(void);
 	static void mouse(int button, int state, int x, int y);
 	static void motion(int x, int y);
-	static void init(void);
-
 	static void Key(unsigned char key, int x, int y);
+	static void rotateEye(GLfloat angle, int axis);
+	static void zoomEye(GLfloat distance);
+	static void drawCircle(GLfloat radius, Vector3f center, GLint plane,
+		GLint numLines, Vector3f color);
 
+public:
+	static void initialize(int *argcp, char **argv);
+	static void setMesh(PolyMesh& _mesh);
 	static void run();
 };
 //=============================================================================
