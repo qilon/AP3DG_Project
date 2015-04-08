@@ -3,6 +3,9 @@
 
 void pca()
 {
+	time_t tstart, tend;
+	tstart = time(0);
+	
 	// Reading meshes:
 	const int nMesh = 3;
 	MyMesh meshes[nMesh];
@@ -52,5 +55,15 @@ void pca()
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> solver(C);
 	Eigen::MatrixXf eVectors = solver.eigenvectors().real();
 	Eigen::VectorXf eValues = solver.eigenvalues().real();
+
+	tend = time(0);
+	
+	ofstream file("pca_result.txt");
+	if (file.is_open())
+	{
+		file << "Elapsed time : " << difftime(tend, tstart)/60 << " minute(s)." << endl;
+		file << "Eigen vectors: " << endl << eVectors << endl;
+		file << "Eigen values: " << endl << eValues << endl;
+	}
 }
 //=============================================================================
