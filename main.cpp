@@ -20,7 +20,7 @@ const static string PCA_RESULT_URL = "pca_result.txt";
 
 // VIEWER TEST PARAMETERS
 const static bool READ_VERTEX_COLORS = false;
-const static char* PLY_FILENAME = "./_models/mesh000.ply";
+const static char* PLY_FILENAME = "./_models/scapecomp/mesh0.ply";
 //=============================================================================
 int main(int argc, char **argv)
 {
