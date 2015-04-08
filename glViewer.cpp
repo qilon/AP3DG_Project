@@ -47,7 +47,7 @@ bool GLViewer::showCircles = true;
 void GLViewer::initialize(int *argc, char **argv)
 {
 	glutInit(argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutCreateWindow(WINDOW_TITLE);
 
@@ -89,6 +89,9 @@ void GLViewer::init(void)
 
 	/* Use depth buffering for hidden surface elimination. */
 	glEnable(GL_DEPTH_TEST);
+
+	/* Anti-aliasing*/
+	glEnable(GL_MULTISAMPLE);
 }
 //=============================================================================
 void GLViewer::display(void)

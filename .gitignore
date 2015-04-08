@@ -4,5 +4,6 @@ AP3DG_Project.v12.suo
 AP3DG_Project.vcxproj.user
 Debug/
 Release/
-x64/
+x64/Debug
+x64/Release
 *.log
