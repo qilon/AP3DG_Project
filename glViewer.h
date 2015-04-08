@@ -8,6 +8,7 @@
 #endif
 
 #include "PolyMesh.h"
+#include "pca.h"
 //=============================================================================
 #define UPPER_A 65
 #define LOWER_A 97
@@ -75,6 +76,8 @@ private:
 	static PolyMesh mesh;
 	static bool showCircles;
 
+	static PCA pca;
+
 	//=========================================================================
 
 	static void init(void);
@@ -92,5 +95,6 @@ public:
 	static void initialize(int *argcp, char **argv);
 	static void setMesh(PolyMesh& _mesh);
 	static void run();
+	static void loadPCA(string _pca_filename_url);
 };
 //=============================================================================

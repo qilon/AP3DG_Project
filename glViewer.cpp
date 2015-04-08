@@ -43,6 +43,8 @@ PolyMesh GLViewer::mesh;
 GLfloat GLViewer::radius = 1.f;
 bool GLViewer::showCircles = true;
 
+PCA GLViewer::pca = PCA();
+
 //=============================================================================
 void GLViewer::initialize(int *argc, char **argv)
 {
@@ -389,5 +391,10 @@ void GLViewer::drawCircle(GLfloat radius, Vector3f center, GLint plane,
 	glEnd();
 
 	glPopMatrix();
+}
+//=============================================================================
+void GLViewer::loadPCA(string _pca_filename_url)
+{
+	pca.read(_pca_filename_url);
 }
 //=============================================================================
