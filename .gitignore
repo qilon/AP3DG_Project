@@ -3,4 +3,6 @@ AP3DG_Project.sdf
 AP3DG_Project.v12.suo
 AP3DG_Project.vcxproj.user
 Debug/
+Release/
+x64/
 *.log
