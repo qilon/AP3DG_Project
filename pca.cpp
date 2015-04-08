@@ -1,22 +1,22 @@
 #include "pca.h"
 //=============================================================================
 
-void pca()
+void pca(int nMeshes, string ply_models_url_preffix, string pca_result_url)
 {
+	// Starting counting time
 	time_t tstart, tend;
 	tstart = time(0);
 	
 	// Reading meshes:
-	const int nMesh = 3;
-	MyMesh meshes[nMesh];
+	MyMesh *meshes = new MyMesh[nMeshes];
 
-	for (int iMesh = 0; iMesh < nMesh; iMesh++){
+	for (int iMesh = 0; iMesh < nMeshes; iMesh++){
 		string index;
 		stringstream convert;
 		convert << iMesh;
 		index = convert.str();
 		cout << "Reading mesh #" + index << endl;
-		if (!OpenMesh::IO::read_mesh(meshes[iMesh], "_models/scapecomp/mesh" + index + ".ply"))
+		if (!OpenMesh::IO::read_mesh(meshes[iMesh], ply_models_url_preffix + index + ".ply"))
 		{
 			std::cerr << "Cannot read mesh #" + index << std::endl;
 		}
@@ -25,8 +25,8 @@ void pca()
 	// Building matrix S:
 	cout << "Building matrix S..." << endl;
 	const int nVert = meshes[0].n_vertices();
-	Eigen::MatrixXf S(3 * nVert, nMesh);
-	for (int iMesh = 0; iMesh < nMesh; iMesh++) {
+	Eigen::MatrixXf S(3 * nVert, nMeshes);
+	for (int iMesh = 0; iMesh < nMeshes; iMesh++) {
 		Eigen::MatrixXf cloud = mesh2EigenMatrix(meshes[iMesh]);
 		for (int iVert = 0; iVert < nVert; iVert++) {
 			S(3 * iVert, iMesh) = cloud(0, iVert);
@@ -41,8 +41,8 @@ void pca()
 	
 	// Computing centered S:
 	cout << "Computing centered S..." << endl;
-	Eigen::MatrixXf centS(3 * nVert, nMesh);
-	for (int iMesh = 0; iMesh < nMesh; iMesh++) {
+	Eigen::MatrixXf centS(3 * nVert, nMeshes);
+	for (int iMesh = 0; iMesh < nMeshes; iMesh++) {
 		centS.col(iMesh) = S.col(iMesh) - meanS;
 	}
 
@@ -56,9 +56,15 @@ void pca()
 	Eigen::MatrixXf eVectors = solver.eigenvectors().real();
 	Eigen::VectorXf eValues = solver.eigenvalues().real();
 
+	// Deleting meshes
+	delete meshes;
+	meshes = nullptr;
+
+	// Finishing counting time
 	tend = time(0);
 	
-	ofstream file("pca_result.txt");
+	// Writing result in file
+	ofstream file(pca_result_url);
 	if (file.is_open())
 	{
 		file << "Elapsed time : " << difftime(tend, tstart)/60 << " minute(s)." << endl;

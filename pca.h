@@ -10,4 +10,4 @@
 
 using namespace std;
 
-void pca();
+void pca(int nMeshes, string ply_models_url_preffix, string pca_result_url);

@@ -10,14 +10,20 @@ implied. This program is -not- in the public domain. */
 
 //#include "glViewer.h"
 #include "pca.h"
-
+//=============================================================================
 using namespace std;
+//=============================================================================
+// PCA PARAMETERS
+const static int NUM_MESHES = 3;
+const static string PLY_MODELS_URL_PREFFIX = "_models/scapecomp/mesh";
+const static string PCA_RESULT_URL = "pca_result.txt";
+
 //=============================================================================
 int main(int argc, char **argv)
 {
 	//initViewer(&argc, argv);
 	//glutMainLoop();
-	pca();
+	pca(NUM_MESHES, PLY_MODELS_URL_PREFFIX, PCA_RESULT_URL);
 
 	return 0;
 }
