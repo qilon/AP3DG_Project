@@ -158,16 +158,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GLViewer.cpp" />
-    <ClCompile Include="convert.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pca.cpp" />
-    <ClCompile Include="PolyMesh.cpp" />
+    <ClCompile Include="MyMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLViewer.h" />
-    <ClInclude Include="convert.h" />
     <ClInclude Include="pca.h" />
-    <ClInclude Include="PolyMesh.h" />
+    <ClInclude Include="MyMesh.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

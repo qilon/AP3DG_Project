@@ -7,7 +7,6 @@
 #include <GL/glut.h>
 #endif
 
-#include "PolyMesh.h"
 #include "pca.h"
 //=============================================================================
 #define UPPER_A 65
@@ -73,7 +72,7 @@ private:
 
 	static GLfloat background_colour[4];  /* Background colour. */
 
-	static PolyMesh mesh;
+	static MyMesh mesh;
 	static bool showCircles;
 
 	static PCA pca;
@@ -93,7 +92,7 @@ private:
 
 public:
 	static void initialize(int *argcp, char **argv);
-	static void setMesh(PolyMesh& _mesh);
+	static void setMesh(MyMesh& _mesh);
 	static void run();
 	static void loadPCA(string _pca_filename_url);
 };

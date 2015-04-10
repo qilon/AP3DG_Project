@@ -38,7 +38,7 @@ GLfloat GLViewer::light_position[4] = { 1.0, 1.0, 1.0, 0.0 };  /* Infinite light
 
 GLfloat GLViewer::background_colour[4] = { 0.4f, 0.4f, 0.4f, 0.0f };	/* Background colour. */
 
-PolyMesh GLViewer::mesh;
+MyMesh GLViewer::mesh;
 
 GLfloat GLViewer::radius = 1.f;
 bool GLViewer::showCircles = true;
@@ -153,16 +153,16 @@ void GLViewer::motion(int x, int y)
 void GLViewer::drawModel(void)
 {
 	glBegin(GL_TRIANGLES);
-	for (PolyMesh::FaceIter f_it = mesh.faces_begin(); 
+	for (MyMesh::FaceIter f_it = mesh.faces_begin(); 
 		f_it != mesh.faces_end(); ++f_it)
 	{
-		PolyMesh::FaceVertexIter fv_it;
+		MyMesh::FaceVertexIter fv_it;
 		for (fv_it = mesh.fv_iter(*f_it); fv_it.is_valid(); ++fv_it)
 		{
-			PolyMesh::Point p = mesh.point(*fv_it);
+			MyMesh::Point p = mesh.point(*fv_it);
 			float point[3] {p[0], p[1], p[2]};
 
-			PolyMesh::Normal n = mesh.normal(*fv_it);
+			MyMesh::Normal n = mesh.normal(*fv_it);
 			float normal[3] {n[0], n[1], n[2]};
 
 			glColor3f(MODEL_COLOR(0), MODEL_COLOR(1), MODEL_COLOR(2));
@@ -243,7 +243,7 @@ void GLViewer::Key(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 }
 //=============================================================================
-void GLViewer::setMesh(PolyMesh& _mesh)
+void GLViewer::setMesh(MyMesh& _mesh)
 {
 	mesh = _mesh;
 
@@ -266,11 +266,11 @@ void GLViewer::setMesh(PolyMesh& _mesh)
 	GLfloat min_x = numeric_limits<float>::max(), 
 		min_y = numeric_limits<float>::max(), 
 		min_z = numeric_limits<float>::max();
-	PolyMesh::VertexIter v_it, v_end(mesh.vertices_end());
+	MyMesh::VertexIter v_it, v_end(mesh.vertices_end());
 	int i_v = 0;
 	for (v_it = mesh.vertices_begin(); v_it != v_end; v_it++)
 	{
-		PolyMesh::Point p = mesh.point(*v_it);
+		MyMesh::Point p = mesh.point(*v_it);
 		max_x = max(max_x, p[0]);
 		max_y = max(max_y, p[1]);
 		max_z = max(max_z, p[2]);
@@ -396,5 +396,8 @@ void GLViewer::drawCircle(GLfloat radius, Vector3f center, GLint plane,
 void GLViewer::loadPCA(string _pca_filename_url)
 {
 	pca.read(_pca_filename_url);
+
+	// Update mesh based on the pca
+	pca.updateMesh(mesh);
 }
 //=============================================================================

@@ -2,25 +2,24 @@
 //=============================================================================
 PCA::PCA()
 {
-
+	degrees_freedom = 0;
+	vector_size = 0;
 }
 //=============================================================================
-PCA::PCA(string _pca_filename_url)
+PCA::PCA(string _pca_filename_url, int _file_type)
 {
-	read(_pca_filename_url);
-	initAlphas();
+	if (_file_type == PCA_FILE)
+	{
+		read(_pca_filename_url);
+	}
+	else
+	{
+		readFullEigen(_pca_filename_url);
+	}
 }
 //=============================================================================
 PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 {
-	degrees_freedom = _n_meshes - 1;
-
-	initAlphas();
-
-	// Starting counting time
-	time_t tstart, tend;
-	tstart = time(0);
-
 	// Reading meshes:
 	MyMesh *meshes = new MyMesh[_n_meshes];
 
@@ -36,9 +35,119 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 		}
 	}
 
+	// Computing PCA
+	computePCA(meshes, _n_meshes);
+
+	// Initialize coefficients
+	initAlphas();
+
+	// Deleting meshes
+	delete[] meshes;
+	meshes = nullptr;
+}
+//=============================================================================
+PCA::~PCA()
+{
+}
+//=============================================================================
+void PCA::readFullEigen(string _pca_filename_url)
+{
+	ifstream in(_pca_filename_url, ios::in | std::ios::binary);
+
+	in.read((char*)(&degrees_freedom), sizeof(int));
+	in.read((char*)(&vector_size), sizeof(int));
+
+	cout << "Degrees of freedom: " << degrees_freedom << endl;
+	cout << "Vector size: " << vector_size << endl;
+
+	eigen_vectors.resize(vector_size, vector_size);
+	eigen_values.resize(vector_size);
+	mean_model.resize(vector_size);
+
+	in.read((char *)eigen_vectors.data(), 
+		vector_size*vector_size*sizeof(MatrixXf::Scalar));
+	in.read((char *)eigen_values.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+	in.read((char*)mean_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+
+	in.close();
+
+	initAlphas();
+}
+//=============================================================================
+void PCA::writeFullEigen(string _pca_filename_url)
+{
+	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
+
+	out.write((char*)(&degrees_freedom), sizeof(int));
+	out.write((char*)(&vector_size), sizeof(int));
+
+	cout << "Degrees of freedom: " << degrees_freedom << endl;
+	cout << "Vector size: " << vector_size << endl;
+
+	out.write((char*)eigen_vectors.data(), 
+		vector_size*vector_size*sizeof(MatrixXf::Scalar));
+	out.write((char*)eigen_values.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+	out.write((char*)mean_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+
+	out.close();
+}
+//=============================================================================
+void PCA::read(string _pca_filename_url)
+{
+	ifstream in(_pca_filename_url, ios::in | std::ios::binary);
+
+	in.read((char*)(&degrees_freedom), sizeof(int));
+	in.read((char*)(&vector_size), sizeof(int));
+
+	cout << "Degrees of freedom: " << degrees_freedom << endl;
+	cout << "Eigenvectors rows: " << vector_size << endl;
+
+	eigen_vectors.resize(vector_size, degrees_freedom);
+	eigen_values.resize(degrees_freedom);
+	mean_model.resize(vector_size);
+
+	in.read((char *)eigen_vectors.data(),
+		vector_size*degrees_freedom*sizeof(MatrixXf::Scalar));
+	in.read((char *)eigen_values.data(),
+		degrees_freedom*sizeof(VectorXf::Scalar));
+	in.read((char*)mean_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+
+	in.close();
+
+	initAlphas();
+}
+//=============================================================================
+void PCA::write(string _pca_filename_url)
+{
+	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
+
+	out.write((char*)(&degrees_freedom), sizeof(int));
+	out.write((char*)(&vector_size), sizeof(int));
+
+	cout << "Degrees of freedom: " << degrees_freedom << endl;
+	cout << "Eigenvectors rows: " << vector_size << endl;
+
+	out.write((char*)eigen_vectors.data(),
+		vector_size*degrees_freedom*sizeof(MatrixXf::Scalar));
+	out.write((char*)eigen_values.data(),
+		degrees_freedom*sizeof(VectorXf::Scalar));
+	out.write((char*)mean_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+
+	out.close();
+}
+//=============================================================================
+void PCA::computePCA(MyMesh* meshes, int _n_meshes)
+{
+	int nVert = meshes[0].n_vertices();
+
 	// Building matrix S:
 	cout << "Building matrix S..." << endl;
-	const int nVert = meshes[0].n_vertices();
 	Eigen::MatrixXf S(3 * nVert, _n_meshes);
 	for (int iMesh = 0; iMesh < _n_meshes; iMesh++) {
 		Eigen::MatrixXf cloud = mesh2EigenMatrix(meshes[iMesh]);
@@ -51,7 +160,7 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 
 	// Computing mean:
 	cout << "Building mean..." << endl;
-	Eigen::VectorXf meanS = S.rowwise().mean();
+	VectorXf meanS = S.rowwise().mean();
 
 	// Computing centered S:
 	cout << "Computing centered S..." << endl;
@@ -68,77 +177,57 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 	cout << "Computing eigenvectors..." << endl;
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> solver(C);
 
-	eigen_vectors = solver.eigenvectors().real();
-	eigen_values = solver.eigenvalues().real();
+	MatrixXf new_eigen_vectors = solver.eigenvectors().real();
+	VectorXf new_eigen_values = solver.eigenvalues().real();
 
-	// Deleting meshes
-	delete meshes;
-	meshes = nullptr;
+	// Setting mean model, degrees of freedom and size vector
+	mean_model = meanS;
+	degrees_freedom = _n_meshes - 1;
+	vector_size = new_eigen_vectors.rows();
+	eigen_vectors.resize(vector_size, degrees_freedom);
+	eigen_values.resize(degrees_freedom);
 
-	// Finishing counting time
-	tend = time(0);
-
-	cout << "Elapsed time : " << difftime(tend, tstart) / 60 << " minute(s)." << endl;
+	// Taking the highest eigenvalues and their corresponding eigenvectors 
+	float min_eigen_value = new_eigen_values.minCoeff() - 1.f;
+	VectorXf::Index max_idx = 0;
+	for (int i = 0; i < degrees_freedom; i++)
+	{
+		new_eigen_values.maxCoeff(&max_idx);
+		eigen_vectors.col(i) = new_eigen_vectors.col(max_idx);
+		eigen_values(i) = new_eigen_values(max_idx);
+		new_eigen_values(max_idx) = min_eigen_value;
+	}
 }
 //=============================================================================
-PCA::~PCA()
+void PCA::updateMesh(MyMesh& _mesh)
 {
-}
-//=============================================================================
-void PCA::read(string _pca_filename_url)
-{
-	MatrixXf::Index evectors_rows = 0;
-	MatrixXf::Index evectors_cols = 0;
-	MatrixXf::Index evalues_rows = 0;
-	MatrixXf::Index evalues_cols = 0;
+	VectorXf new_model = mean_model;
 
-	ifstream in(_pca_filename_url, ios::in | std::ios::binary);
+	cout << alphas.size() << endl;
+	cout << eigen_vectors.rows() << endl;
+	cout << eigen_vectors.cols() << endl;
 
-	in.read((char*)(&degrees_freedom), sizeof(int));
+	for (int i = 0; i < degrees_freedom; i++)
+	{
+		new_model += alphas(i) * eigen_vectors.col(i);
+	}
 
-	in.read((char*)(&evectors_rows), sizeof(MatrixXf::Index));
-	in.read((char*)(&evectors_cols), sizeof(MatrixXf::Index));
-	in.read((char*)(&evalues_rows), sizeof(MatrixXf::Index));
-	in.read((char*)(&evalues_cols), sizeof(MatrixXf::Index));
+	MyMesh::ConstVertexIter vIt1(_mesh.vertices_begin());
+	MyMesh::ConstVertexIter vIt2(_mesh.vertices_end());
 
-	eigen_vectors.resize(evectors_rows, evectors_cols);
-	eigen_values.resize(evalues_rows, evalues_cols);
-
-	in.read((char *)eigen_vectors.data(), 
-		evectors_rows*evectors_cols*sizeof(MatrixXf::Scalar));
-	in.read((char *)eigen_values.data(),
-		evalues_rows*evalues_cols*sizeof(MatrixXf::Scalar));
-
-	in.close();
-}
-//=============================================================================
-void PCA::write(string _pca_filename_url)
-{
-	MatrixXf::Index evectors_rows = eigen_vectors.rows();
-	MatrixXf::Index evectors_cols = eigen_vectors.cols();
-	MatrixXf::Index evalues_rows = eigen_values.rows();
-	MatrixXf::Index evalues_cols = eigen_values.cols();
-
-	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
-
-	out.write((char*)(&degrees_freedom), sizeof(int));
-
-	out.write((char*)(&evectors_rows), sizeof(MatrixXf::Index));
-	out.write((char*)(&evectors_cols), sizeof(MatrixXf::Index));
-	out.write((char*)(&evalues_rows), sizeof(MatrixXf::Index));
-	out.write((char*)(&evalues_cols), sizeof(MatrixXf::Index));
-
-	out.write((char*)eigen_vectors.data(), 
-		evectors_rows*evectors_cols*sizeof(MatrixXf::Scalar));
-	out.write((char*)eigen_values.data(),
-		evalues_rows*evalues_cols*sizeof(MatrixXf::Scalar));
-
-	out.close();
+	for (size_t i = 0; vIt1 != vIt2; vIt1++, i++) {
+		float x = new_model(3 * i);
+		float y = new_model(3 * i + 1);
+		float z = new_model(3 * i + 2);
+		_mesh.point(*vIt1)[0] = x;
+		_mesh.point(*vIt1)[1] = y;
+		_mesh.point(*vIt1)[2] = z;
+	}
 }
 //=============================================================================
 void PCA::initAlphas()
 {
 	alphas = VectorXf::Zero(degrees_freedom);
-	alphas(0) = 1;
+	//alphas = eigen_values;
 }
 //=============================================================================
