@@ -89,6 +89,7 @@ private:
 	static void zoomEye(GLfloat distance);
 	static void drawCircle(GLfloat radius, Vector3f center, GLint plane,
 		GLint numLines, Vector3f color);
+	static void updateCenterEye();
 
 public:
 	static void initialize(int *argcp, char **argv);

@@ -260,38 +260,7 @@ void GLViewer::setMesh(MyMesh& _mesh)
 		mesh.update_normals();
 	}
 
-	GLfloat max_x = numeric_limits<float>::min(),
-		max_y = numeric_limits<float>::min(),
-		max_z = numeric_limits<float>::min();
-	GLfloat min_x = numeric_limits<float>::max(), 
-		min_y = numeric_limits<float>::max(), 
-		min_z = numeric_limits<float>::max();
-	MyMesh::VertexIter v_it, v_end(mesh.vertices_end());
-	int i_v = 0;
-	for (v_it = mesh.vertices_begin(); v_it != v_end; v_it++)
-	{
-		MyMesh::Point p = mesh.point(*v_it);
-		max_x = max(max_x, p[0]);
-		max_y = max(max_y, p[1]);
-		max_z = max(max_z, p[2]);
-		min_x = min(min_x, p[0]);
-		min_y = min(min_y, p[1]);
-		min_z = min(min_z, p[2]);
-	}
-
-	center(0) = min_x + (max_x - min_x) / 2;
-	center(1) = min_y + (max_y - min_y) / 2;
-	center(2) = min_z + (max_z - min_z) / 2;
-
-	eye(0) = center(0);
-	eye(1) = center(1);
-	eye(2) = center(2) + eyeDistance;
-
-	up(0) = 0.0f;
-	up(1) = 1.0f;
-	up(2) = 0.0f;
-
-	radius = center.cwiseAbs().maxCoeff() + RADIUS_OFFSET;
+	updateCenterEye();
 
 	glutPostRedisplay();
 }
@@ -399,5 +368,43 @@ void GLViewer::loadPCA(string _pca_filename_url)
 
 	// Update mesh based on the pca
 	pca.updateMesh(mesh);
+
+	updateCenterEye();
+}
+//=============================================================================
+void GLViewer::updateCenterEye()
+{
+	GLfloat max_x = numeric_limits<float>::min(),
+		max_y = numeric_limits<float>::min(),
+		max_z = numeric_limits<float>::min();
+	GLfloat min_x = numeric_limits<float>::max(),
+		min_y = numeric_limits<float>::max(),
+		min_z = numeric_limits<float>::max();
+	MyMesh::VertexIter v_it, v_end(mesh.vertices_end());
+	int i_v = 0;
+	for (v_it = mesh.vertices_begin(); v_it != v_end; v_it++)
+	{
+		MyMesh::Point p = mesh.point(*v_it);
+		max_x = max(max_x, p[0]);
+		max_y = max(max_y, p[1]);
+		max_z = max(max_z, p[2]);
+		min_x = min(min_x, p[0]);
+		min_y = min(min_y, p[1]);
+		min_z = min(min_z, p[2]);
+	}
+
+	center(0) = min_x + (max_x - min_x) / 2;
+	center(1) = min_y + (max_y - min_y) / 2;
+	center(2) = min_z + (max_z - min_z) / 2;
+
+	eye(0) = center(0);
+	eye(1) = center(1);
+	eye(2) = center(2) + eyeDistance;
+
+	up(0) = 0.0f;
+	up(1) = 1.0f;
+	up(2) = 0.0f;
+
+	radius = center.cwiseAbs().maxCoeff() + RADIUS_OFFSET;
 }
 //=============================================================================

@@ -6,16 +6,9 @@ PCA::PCA()
 	vector_size = 0;
 }
 //=============================================================================
-PCA::PCA(string _pca_filename_url, int _file_type)
+PCA::PCA(string _pca_filename_url)
 {
-	if (_file_type == PCA_FILE)
-	{
-		read(_pca_filename_url);
-	}
-	else
-	{
-		readFullEigen(_pca_filename_url);
-	}
+	read(_pca_filename_url);
 }
 //=============================================================================
 PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
@@ -48,52 +41,6 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 //=============================================================================
 PCA::~PCA()
 {
-}
-//=============================================================================
-void PCA::readFullEigen(string _pca_filename_url)
-{
-	ifstream in(_pca_filename_url, ios::in | std::ios::binary);
-
-	in.read((char*)(&degrees_freedom), sizeof(int));
-	in.read((char*)(&vector_size), sizeof(int));
-
-	cout << "Degrees of freedom: " << degrees_freedom << endl;
-	cout << "Vector size: " << vector_size << endl;
-
-	eigen_vectors.resize(vector_size, vector_size);
-	eigen_values.resize(vector_size);
-	mean_model.resize(vector_size);
-
-	in.read((char *)eigen_vectors.data(), 
-		vector_size*vector_size*sizeof(MatrixXf::Scalar));
-	in.read((char *)eigen_values.data(),
-		vector_size*sizeof(VectorXf::Scalar));
-	in.read((char*)mean_model.data(),
-		vector_size*sizeof(VectorXf::Scalar));
-
-	in.close();
-
-	initAlphas();
-}
-//=============================================================================
-void PCA::writeFullEigen(string _pca_filename_url)
-{
-	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
-
-	out.write((char*)(&degrees_freedom), sizeof(int));
-	out.write((char*)(&vector_size), sizeof(int));
-
-	cout << "Degrees of freedom: " << degrees_freedom << endl;
-	cout << "Vector size: " << vector_size << endl;
-
-	out.write((char*)eigen_vectors.data(), 
-		vector_size*vector_size*sizeof(MatrixXf::Scalar));
-	out.write((char*)eigen_values.data(),
-		vector_size*sizeof(VectorXf::Scalar));
-	out.write((char*)mean_model.data(),
-		vector_size*sizeof(VectorXf::Scalar));
-
-	out.close();
 }
 //=============================================================================
 void PCA::read(string _pca_filename_url)
