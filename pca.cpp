@@ -51,7 +51,7 @@ void PCA::read(string _pca_filename_url)
 	in.read((char*)(&vector_size), sizeof(int));
 
 	cout << "Degrees of freedom: " << degrees_freedom << endl;
-	cout << "Eigenvectors rows: " << vector_size << endl;
+	cout << "Eigenvectors rows: " << vector_size << endl; 
 
 	eigen_vectors.resize(vector_size, degrees_freedom);
 	eigen_values.resize(degrees_freedom);
@@ -67,6 +67,20 @@ void PCA::read(string _pca_filename_url)
 	in.close();
 
 	initAlphas();
+
+	// First model:
+	MyMesh first;
+	const char* filename = "./_models/scapecomp/mesh0.ply";
+	loadMesh(first, filename, false);
+	Eigen::MatrixXf cloud = mesh2EigenMatrix(first);
+	int nVert = cloud.cols();
+	cout << vector_size << endl;
+	first_model.resize(vector_size);
+	for (int iVert = 0; iVert < nVert; iVert++) {
+		first_model(3 * iVert) = cloud(0, iVert);
+		first_model(3 * iVert + 1) = cloud(1, iVert);
+		first_model(3 * iVert + 2) = cloud(2, iVert);
+	}
 }
 //=============================================================================
 void PCA::write(string _pca_filename_url)
@@ -135,11 +149,11 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 	eigen_values.resize(degrees_freedom);
 
 	// Taking the highest eigenvalues and their corresponding eigenvectors 
-	float min_eigen_value = new_eigen_values.minCoeff() - 1.f;
+	float min_eigen_value = new_eigen_values.cwiseAbs().minCoeff() - 1.f;
 	VectorXf::Index max_idx = 0;
 	for (int i = 0; i < degrees_freedom; i++)
 	{
-		new_eigen_values.maxCoeff(&max_idx);
+		new_eigen_values.cwiseAbs().maxCoeff(&max_idx);
 		eigen_vectors.col(i) = new_eigen_vectors.col(max_idx);
 		eigen_values(i) = new_eigen_values(max_idx);
 		new_eigen_values(max_idx) = min_eigen_value;
@@ -148,11 +162,11 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 //=============================================================================
 void PCA::updateMesh(MyMesh& _mesh)
 {
-	VectorXf new_model = mean_model;
+	VectorXf new_model = first_model;
 
-	cout << alphas.size() << endl;
-	cout << eigen_vectors.rows() << endl;
-	cout << eigen_vectors.cols() << endl;
+	// cout << alphas.size() << endl;
+	// cout << eigen_vectors.rows() << endl;
+	// cout << eigen_vectors.cols() << endl;
 
 	for (int i = 0; i < degrees_freedom; i++)
 	{
@@ -175,6 +189,16 @@ void PCA::updateMesh(MyMesh& _mesh)
 void PCA::initAlphas()
 {
 	alphas = VectorXf::Zero(degrees_freedom);
-	//alphas = eigen_values;
+	// alphas = eigen_values;
+}
+//=============================================================================
+void PCA::editAlpha(int idx, float new_value)
+{
+	alphas(idx) = new_value;
+}
+//=============================================================================
+float PCA::getAlpha(int idx)
+{
+	return alphas(idx);
 }
 //=============================================================================

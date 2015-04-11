@@ -21,6 +21,8 @@ public:
 	void read(string _pca_filename_url);
 	void write(string _pca_filename_url);
 	void updateMesh(MyMesh& _mesh);
+	void editAlpha(int idx, float new_value);
+	float getAlpha(int idx);
 
 private:
 	int degrees_freedom;
@@ -28,6 +30,7 @@ private:
 	MatrixXf eigen_vectors;
 	VectorXf eigen_values;
 	VectorXf mean_model;
+	VectorXf first_model;
 	VectorXf alphas;
 
 	void initAlphas();

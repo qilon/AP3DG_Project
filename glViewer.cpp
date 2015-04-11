@@ -43,6 +43,8 @@ MyMesh GLViewer::mesh;
 GLfloat GLViewer::radius = 1.f;
 bool GLViewer::showCircles = true;
 
+int GLViewer::idxAlpha = 0;
+
 PCA GLViewer::pca = PCA();
 
 //=============================================================================
@@ -180,6 +182,7 @@ void GLViewer::drawModel(void)
  * Q/E -> Rotate around z axis
  * R/F -> Zoom in/out
  * C   -> Show/hide guidance circles
+ * K/L -> Change alpha coefficient
  */
 void GLViewer::Key(unsigned char key, int x, int y) {
 	switch (key) {
@@ -236,6 +239,22 @@ void GLViewer::Key(unsigned char key, int x, int y) {
 		break;
 	case LOWER_C:
 		showCircles = !showCircles;
+		break;
+	case UPPER_K:
+		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) - 1.f);
+		pca.updateMesh(mesh);
+		break;
+	case LOWER_K:
+		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) - 1.f);
+		pca.updateMesh(mesh);
+		break;
+	case UPPER_L:
+		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) + 1.f);
+		pca.updateMesh(mesh);
+		break;
+	case LOWER_L:
+		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) + 1.f);
+		pca.updateMesh(mesh);
 		break;
 	default:
 		break;

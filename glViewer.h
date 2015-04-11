@@ -19,6 +19,10 @@
 #define LOWER_E 101
 #define UPPER_F 70
 #define LOWER_F 102
+#define UPPER_K 75
+#define LOWER_K 107
+#define UPPER_L 76
+#define LOWER_L 108
 #define UPPER_M 77
 #define LOWER_M 109
 #define UPPER_Q 81
@@ -74,6 +78,8 @@ private:
 
 	static MyMesh mesh;
 	static bool showCircles;
+
+	static int idxAlpha;
 
 	static PCA pca;
 
