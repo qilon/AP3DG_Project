@@ -56,6 +56,7 @@ void PCA::read(string _pca_filename_url)
 	eigen_vectors.resize(vector_size, degrees_freedom);
 	eigen_values.resize(degrees_freedom);
 	mean_model.resize(vector_size);
+	first_model.resize(vector_size);
 
 	in.read((char *)eigen_vectors.data(),
 		vector_size*degrees_freedom*sizeof(MatrixXf::Scalar));
@@ -63,11 +64,14 @@ void PCA::read(string _pca_filename_url)
 		degrees_freedom*sizeof(VectorXf::Scalar));
 	in.read((char*)mean_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
+	in.read((char*)first_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
 
 	in.close();
 
 	initAlphas();
 
+	/*
 	// First model:
 	MyMesh first;
 	const char* filename = "./_models/scapecomp/mesh0.ply";
@@ -81,6 +85,7 @@ void PCA::read(string _pca_filename_url)
 		first_model(3 * iVert + 1) = cloud(1, iVert);
 		first_model(3 * iVert + 2) = cloud(2, iVert);
 	}
+	*/
 }
 //=============================================================================
 void PCA::write(string _pca_filename_url)
@@ -98,6 +103,8 @@ void PCA::write(string _pca_filename_url)
 	out.write((char*)eigen_values.data(),
 		degrees_freedom*sizeof(VectorXf::Scalar));
 	out.write((char*)mean_model.data(),
+		vector_size*sizeof(VectorXf::Scalar));
+	out.write((char*)first_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
 
 	out.close();
@@ -118,6 +125,7 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 			S(3 * iVert + 2, iMesh) = cloud(2, iVert);
 		}
 	}
+	first_model = S.col(0);
 
 	// Computing mean:
 	cout << "Building mean..." << endl;
