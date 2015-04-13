@@ -157,7 +157,7 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 	eigen_values.resize(degrees_freedom);
 
 	// Taking the highest eigenvalues and their corresponding eigenvectors 
-	float min_eigen_value = new_eigen_values.cwiseAbs().minCoeff() - 1.f;
+	float min_eigen_value = new_eigen_values.cwiseAbs().minCoeff() / 2.f;
 	VectorXf::Index max_idx = 0;
 	for (int i = 0; i < degrees_freedom; i++)
 	{
