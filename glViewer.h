@@ -19,12 +19,16 @@
 #define LOWER_E 101
 #define UPPER_F 70
 #define LOWER_F 102
+#define UPPER_I 73
+#define LOWER_I 105
 #define UPPER_K 75
 #define LOWER_K 107
 #define UPPER_L 76
 #define LOWER_L 108
 #define UPPER_M 77
 #define LOWER_M 109
+#define UPPER_O 79
+#define LOWER_O 111
 #define UPPER_Q 81
 #define LOWER_Q 113
 #define UPPER_R 82
@@ -96,6 +100,7 @@ private:
 	static void drawCircle(GLfloat radius, Vector3f center, GLint plane,
 		GLint numLines, Vector3f color);
 	static void updateCenterEye();
+	static void drawText(const char *text, int length, int x, int y);
 
 public:
 	static void initialize(int *argcp, char **argv);

@@ -126,6 +126,18 @@ void GLViewer::display(void)
 		drawCircle(radius, center, 2, CIRCLE_NUM_LINES, CIRCLE_YZ_COLOR);
 	}
 
+	// Draw text with information on eigenvectors
+	stringstream ss;
+	glColor3f(0, 0, 0);
+	ss << "Eigenvector number: " << idxAlpha;
+	string str = ss.str();
+	drawText(str.data(), str.size(), 0, 590);
+	ss.str("");
+	ss.clear();
+	ss << "Value: " << pca.getAlpha(idxAlpha);
+	str = ss.str();
+	drawText(str.data(), str.size(), 0, 580);
+
 	glutSwapBuffers();
 }
 //=============================================================================
@@ -255,6 +267,20 @@ void GLViewer::Key(unsigned char key, int x, int y) {
 	case LOWER_L:
 		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) + 1.f);
 		pca.updateMesh(mesh);
+		break;
+	case UPPER_I:
+		if (idxAlpha > 0)
+			idxAlpha--;
+		break;
+	case LOWER_I:
+		if (idxAlpha > 0)
+			idxAlpha--;
+		break;
+	case UPPER_O:
+		idxAlpha++;
+		break;
+	case LOWER_O:
+		idxAlpha++;
 		break;
 	default:
 		break;
@@ -425,5 +451,26 @@ void GLViewer::updateCenterEye()
 	up(2) = 0.0f;
 
 	radius = center.cwiseAbs().maxCoeff() + RADIUS_OFFSET;
+}
+//=============================================================================
+// https://www.youtube.com/watch?v=elE__Nouv54
+void GLViewer::drawText(const char *text, int length, int x, int y) {
+	glMatrixMode(GL_PROJECTION);
+	double *matrix = new double[16];
+	glGetDoublev(GL_PROJECTION_MATRIX, matrix);
+	glLoadIdentity();
+	glOrtho(0, 800, 0, 600, -5, 5);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glPushMatrix();
+	glLoadIdentity();
+	glRasterPos2i(x, y);
+	for (int i = 0; i < length; i++) {
+		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, (int)text[i]);
+	}
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixd(matrix);
+	glMatrixMode(GL_MODELVIEW);
 }
 //=============================================================================

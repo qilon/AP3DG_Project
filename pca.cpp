@@ -70,22 +70,6 @@ void PCA::read(string _pca_filename_url)
 	in.close();
 
 	initAlphas();
-
-	/*
-	// First model:
-	MyMesh first;
-	const char* filename = "./_models/scapecomp/mesh0.ply";
-	loadMesh(first, filename, false);
-	Eigen::MatrixXf cloud = mesh2EigenMatrix(first);
-	int nVert = cloud.cols();
-	cout << vector_size << endl;
-	first_model.resize(vector_size);
-	for (int iVert = 0; iVert < nVert; iVert++) {
-		first_model(3 * iVert) = cloud(0, iVert);
-		first_model(3 * iVert + 1) = cloud(1, iVert);
-		first_model(3 * iVert + 2) = cloud(2, iVert);
-	}
-	*/
 }
 //=============================================================================
 void PCA::write(string _pca_filename_url)
