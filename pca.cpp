@@ -6,9 +6,9 @@ PCA::PCA()
 	vector_size = 0;
 }
 //=============================================================================
-PCA::PCA(string _pca_filename_url)
+PCA::PCA(string _pca_filename_url, string _features_filename_url)
 {
-	read(_pca_filename_url);
+	read(_pca_filename_url, _features_filename_url);
 }
 //=============================================================================
 PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
@@ -43,12 +43,13 @@ PCA::~PCA()
 {
 }
 //=============================================================================
-void PCA::read(string _pca_filename_url)
+void PCA::read(string _pca_filename_url, string _features_filename_url)
 {
-	ifstream in(_pca_filename_url, ios::in | std::ios::binary);
+	// Load PCA info
+	ifstream inPCA(_pca_filename_url, ios::in | std::ios::binary);
 
-	in.read((char*)(&degrees_freedom), sizeof(int));
-	in.read((char*)(&vector_size), sizeof(int));
+	inPCA.read((char*)(&degrees_freedom), sizeof(int));
+	inPCA.read((char*)(&vector_size), sizeof(int));
 
 	cout << "Degrees of freedom: " << degrees_freedom << endl;
 	cout << "Eigenvectors rows: " << vector_size << endl; 
@@ -58,16 +59,36 @@ void PCA::read(string _pca_filename_url)
 	mean_model.resize(vector_size);
 	first_model.resize(vector_size);
 
-	in.read((char *)eigen_vectors.data(),
+	inPCA.read((char *)eigen_vectors.data(),
 		vector_size*degrees_freedom*sizeof(MatrixXf::Scalar));
-	in.read((char *)eigen_values.data(),
+	inPCA.read((char *)eigen_values.data(),
 		degrees_freedom*sizeof(VectorXf::Scalar));
-	in.read((char*)mean_model.data(),
+	inPCA.read((char*)mean_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
-	in.read((char*)first_model.data(),
+	inPCA.read((char*)first_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
 
-	in.close();
+
+	inPCA.close();
+
+	
+	// Load features
+	// ifstream inFeatures(_features_filename_url, ios::in | std::ios::binary);
+	ifstream inFeatures(_features_filename_url, ios::in);
+
+	inFeatures.read((char*)(&n_controllers), sizeof(int));
+
+	cout << "Number of controllers: " << n_controllers << endl;
+	M_feature2Alpha.resize(degrees_freedom, n_controllers + 1);
+	features.resize(n_controllers + 1);
+
+	inFeatures.read((char *)M_feature2Alpha.data(),
+		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+	inFeatures.read((char *)features.data(),
+		(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+	inFeatures.close();
+	
+
 
 	initAlphas();
 }
@@ -154,11 +175,10 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 //=============================================================================
 void PCA::updateMesh(MyMesh& _mesh)
 {
-	VectorXf new_model = first_model;
+	VectorXf new_model = mean_model;
 
-	// cout << alphas.size() << endl;
-	// cout << eigen_vectors.rows() << endl;
-	// cout << eigen_vectors.cols() << endl;
+	alphas = M_feature2Alpha * features;
+	cout << alphas << endl;
 
 	for (int i = 0; i < degrees_freedom; i++)
 	{
@@ -184,13 +204,91 @@ void PCA::initAlphas()
 	// alphas = eigen_values;
 }
 //=============================================================================
-void PCA::editAlpha(int idx, float new_value)
+void PCA::editFeature(int idxFeature, float new_value)
 {
-	alphas(idx) = new_value;
+	features(idxFeature) = new_value;
 }
 //=============================================================================
-float PCA::getAlpha(int idx)
+float PCA::getFeature(int idxFeature)
 {
-	return alphas(idx);
+	return features(idxFeature);
+}
+//=============================================================================
+int PCA::getControllers()
+{
+	return n_controllers;
+}
+//=============================================================================
+void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
+	string _feature_filename_url) {
+
+	int n_controllers = 1;
+
+	// Reading meshes:
+	MyMesh *meshes = new MyMesh[_n_meshes];
+
+	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
+		string index;
+		stringstream convert;
+		convert << iMesh;
+		index = convert.str();
+		cout << "Reading mesh #" + index << endl;
+		if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix + index + ".ply"))
+		{
+			std::cerr << "Cannot read mesh #" + index << std::endl;
+		}
+	}
+
+	int nVert = mean_model.size()/3;
+	cout << nVert << endl;
+	MatrixXf features(MatrixXf::Ones(n_controllers + 1, _n_meshes));
+	MatrixXf centS(3 * nVert, _n_meshes);
+	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
+		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
+		Vector3f u = model.col(8344) - model.col(9784);
+		Vector3f v = model.col(7665) - model.col(9784);
+		float angle = acos(u.dot(v) / (u.norm() * v.norm()));
+		features(0, iMesh) = angle;
+
+		for (int iVert = 0; iVert < nVert; iVert++) {
+			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);
+			centS(3 * iVert + 1, iMesh) = model(1, iVert) - mean_model(3 * iVert + 1);
+			centS(3 * iVert + 2, iMesh) = model(2, iVert) - mean_model(3 * iVert + 2);
+		}
+	}
+
+	// Calculate alphas of the mesh
+	MatrixXf alphasMeshes = eigen_vectors.transpose() * centS;
+
+	// Calculate matrix M
+	JacobiSVD<MatrixXf> svd(features, ComputeFullU | ComputeFullV);
+	MatrixXf U = svd.matrixU();
+	MatrixXf V = svd.matrixV();
+	VectorXf singularValues = svd.singularValues();
+	MatrixXf M_SigmaInv(MatrixXf::Zero(_n_meshes, n_controllers + 1));
+	for (int i = 0; i < min(n_controllers + 1, _n_meshes); i++) {
+		if (abs(singularValues(i)) < 1e-06) {
+			M_SigmaInv(i, i) = 0;
+		}
+		else {
+			M_SigmaInv(i, i) = 1 / singularValues(i);
+		}
+	}
+
+	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
+	MatrixXf M_feature2Alpha = alphasMeshes * featuresInv;
+
+	// Calculate initial features
+	VectorXf initialFeatures = features.col(0);
+
+	ofstream out(_feature_filename_url, ios::out | ios::trunc);
+
+	out.write((char*)(&n_controllers), sizeof(int));
+	out.write((char*)M_feature2Alpha.data(),
+		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+	out.write((char*)initialFeatures.data(),
+		(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+	out.close();
+
 }
 //=============================================================================

@@ -83,7 +83,7 @@ private:
 	static MyMesh mesh;
 	static bool showCircles;
 
-	static int idxAlpha;
+	static int idxFeature;
 
 	static PCA pca;
 
@@ -106,6 +106,6 @@ public:
 	static void initialize(int *argcp, char **argv);
 	static void setMesh(MyMesh& _mesh);
 	static void run();
-	static void loadPCA(string _pca_filename_url);
+	static void loadPCA(string _pca_filename_url, string _features_filename_url);
 };
 //=============================================================================

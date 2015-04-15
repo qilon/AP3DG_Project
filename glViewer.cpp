@@ -43,7 +43,7 @@ MyMesh GLViewer::mesh;
 GLfloat GLViewer::radius = 1.f;
 bool GLViewer::showCircles = true;
 
-int GLViewer::idxAlpha = 0;
+int GLViewer::idxFeature = 0;
 
 PCA GLViewer::pca = PCA();
 
@@ -129,12 +129,12 @@ void GLViewer::display(void)
 	// Draw text with information on eigenvectors
 	stringstream ss;
 	glColor3f(0, 0, 0);
-	ss << "Eigenvector number: " << idxAlpha;
+	ss << "Feature number: " << idxFeature;
 	string str = ss.str();
 	drawText(str.data(), str.size(), 0, 590);
 	ss.str("");
 	ss.clear();
-	ss << "Value: " << pca.getAlpha(idxAlpha);
+	ss << "Value: " << pca.getFeature(idxFeature);
 	str = ss.str();
 	drawText(str.data(), str.size(), 0, 580);
 
@@ -253,34 +253,38 @@ void GLViewer::Key(unsigned char key, int x, int y) {
 		showCircles = !showCircles;
 		break;
 	case UPPER_K:
-		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) - 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 1.f);
 		pca.updateMesh(mesh);
 		break;
 	case LOWER_K:
-		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) - 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 1.f);
 		pca.updateMesh(mesh);
 		break;
 	case UPPER_L:
-		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) + 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 1.f);
 		pca.updateMesh(mesh);
 		break;
 	case LOWER_L:
-		pca.editAlpha(idxAlpha, pca.getAlpha(idxAlpha) + 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 1.f);
 		pca.updateMesh(mesh);
 		break;
 	case UPPER_I:
-		if (idxAlpha > 0)
-			idxAlpha--;
+		if (idxFeature > 0)
+			idxFeature--;
 		break;
 	case LOWER_I:
-		if (idxAlpha > 0)
-			idxAlpha--;
+		if (idxFeature > 0)
+			idxFeature--;
 		break;
 	case UPPER_O:
-		idxAlpha++;
+		if (idxFeature < pca.getControllers() - 1) {
+			idxFeature++;
+		}
 		break;
 	case LOWER_O:
-		idxAlpha++;
+		if (idxFeature < pca.getControllers() - 1) {
+			idxFeature++;
+		}
 		break;
 	default:
 		break;
@@ -407,9 +411,9 @@ void GLViewer::drawCircle(GLfloat radius, Vector3f center, GLint plane,
 	glPopMatrix();
 }
 //=============================================================================
-void GLViewer::loadPCA(string _pca_filename_url)
+void GLViewer::loadPCA(string _pca_filename_url, string _features_filename_url)
 {
-	pca.read(_pca_filename_url);
+	pca.read(_pca_filename_url, _features_filename_url);
 
 	// Update mesh based on the pca
 	pca.updateMesh(mesh);
