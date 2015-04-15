@@ -47,17 +47,47 @@ int GLViewer::idxFeature = 0;
 
 PCA GLViewer::pca = PCA();
 
+GLUI* GLViewer::glui1;
+GLUI* GLViewer::glui2;
+int GLViewer::window_id;
+
+//=============================================================================
+void GLViewer::myGlutIdle(void)
+{
+	/* According to the GLUT specification, the current window is
+	undefined during an idle callback.  So we need to explicitly change
+	it if necessary */
+	if (glutGetWindow() != window_id)
+		glutSetWindow(window_id);
+
+	glutPostRedisplay();
+}
 //=============================================================================
 void GLViewer::initialize(int *argc, char **argv)
 {
 	glutInit(argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow(WINDOW_TITLE);
+	int window_id = glutCreateWindow(WINDOW_TITLE);
+
+	glui1 = GLUI_Master.create_glui_subwindow(window_id,
+		GLUI_SUBWINDOW_RIGHT);
+	glui2 = GLUI_Master.create_glui_subwindow(window_id,
+		GLUI_SUBWINDOW_BOTTOM);
+
+
+	glui1->add_checkbox("Lighting");
+
+	glui1->set_main_gfx_window(window_id);
+
+
+
+	GLUI_Master.set_glutIdleFunc(myGlutIdle);
 
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
-	glutKeyboardFunc(Key);
+	//glutKeyboardFunc(Key);
+	GLUI_Master.set_glutKeyboardFunc(Key);
 	glutMotionFunc(motion);
 
 	init();

@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	//pca.writeFeatures(NUM_MESHES, PLY_MODELS_URL_PREFFIX, FEATURES_URL);
 
 	PCA pca = PCA(PCA_RESULT_URL, FEATURES_URL);
-	pca.writeFeatures(NUM_MESHES, PLY_MODELS_URL_PREFFIX, FEATURES_URL);
+	//pca.writeFeatures(NUM_MESHES, PLY_MODELS_URL_PREFFIX, FEATURES_URL);
 	
 	// Mesh viewer
 	GLViewer viewer;

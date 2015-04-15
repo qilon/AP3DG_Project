@@ -5,9 +5,11 @@
 #else
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <GL/glui.h>
 #endif
 
 #include "pca.h"
+#include "Feature.h"
 //=============================================================================
 #define UPPER_A 65
 #define LOWER_A 97
@@ -87,6 +89,11 @@ private:
 
 	static PCA pca;
 
+	static GLUI* glui1;
+	static GLUI* glui2;
+	static int window_id;
+	static Feature* features;
+
 	//=========================================================================
 
 	static void init(void);
@@ -101,8 +108,10 @@ private:
 		GLint numLines, Vector3f color);
 	static void updateCenterEye();
 	static void drawText(const char *text, int length, int x, int y);
+	static void myGlutIdle(void);
 
 public:
+	~GLViewer();
 	static void initialize(int *argcp, char **argv);
 	static void setMesh(MyMesh& _mesh);
 	static void run();
