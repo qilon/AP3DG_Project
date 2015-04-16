@@ -89,10 +89,9 @@ private:
 
 	static PCA pca;
 
-	static GLUI* glui1;
-	static GLUI* glui2;
+	static GLUI* glui;
 	static int window_id;
-	static Feature* features;
+	//static Feature* features;
 
 	//=========================================================================
 
@@ -111,7 +110,6 @@ private:
 	static void myGlutIdle(void);
 
 public:
-	~GLViewer();
 	static void initialize(int *argcp, char **argv);
 	static void setMesh(MyMesh& _mesh);
 	static void run();

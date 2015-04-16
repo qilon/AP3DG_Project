@@ -47,8 +47,7 @@ int GLViewer::idxFeature = 0;
 
 PCA GLViewer::pca = PCA();
 
-GLUI* GLViewer::glui1;
-GLUI* GLViewer::glui2;
+GLUI* GLViewer::glui;
 int GLViewer::window_id;
 
 //=============================================================================
@@ -68,17 +67,15 @@ void GLViewer::initialize(int *argc, char **argv)
 	glutInit(argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	int window_id = glutCreateWindow(WINDOW_TITLE);
+	window_id = glutCreateWindow(WINDOW_TITLE);
 
-	glui1 = GLUI_Master.create_glui_subwindow(window_id,
+	glui = GLUI_Master.create_glui_subwindow(window_id,
 		GLUI_SUBWINDOW_RIGHT);
-	glui2 = GLUI_Master.create_glui_subwindow(window_id,
-		GLUI_SUBWINDOW_BOTTOM);
 
 
-	glui1->add_checkbox("Lighting");
+	glui->add_checkbox("Lighting");
 
-	glui1->set_main_gfx_window(window_id);
+	glui->set_main_gfx_window(window_id);
 
 
 
