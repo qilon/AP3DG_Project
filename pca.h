@@ -8,6 +8,19 @@
 #include <Eigen/SparseCore>
 #include <Eigen/IterativeLinearSolvers>
 //=============================================================================
+#define RIGHT_ELBOW 8616
+#define LEFT_ELBOW 8793
+#define RIGHT_KNUCKLE 5165
+#define LEFT_KNUCKLE 5736
+#define RIGHT_SHOULDER 10721
+#define LEFT_SHOULDER 10992
+#define RIGHT_AXILLA 9784
+#define LEFT_AXILLA 9919
+#define RIGHT_INSIDE_ELBOW 8344
+#define LEFT_INSIDE_ELBOW 8500
+#define LEFT_WAIST 7796
+#define RIGHT_WAIST 7665
+//=============================================================================
 using namespace std;
 using namespace Eigen;
 //=============================================================================

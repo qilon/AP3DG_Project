@@ -96,6 +96,8 @@ void GLViewer::init(void)
 
 	/* Anti-aliasing*/
 	glEnable(GL_MULTISAMPLE);
+
+	idxFeature = 0;
 }
 //=============================================================================
 void GLViewer::display(void)
@@ -253,19 +255,19 @@ void GLViewer::Key(unsigned char key, int x, int y) {
 		showCircles = !showCircles;
 		break;
 	case UPPER_K:
-		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 0.1);
 		pca.updateMesh(mesh);
 		break;
 	case LOWER_K:
-		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 0.1);
 		pca.updateMesh(mesh);
 		break;
 	case UPPER_L:
-		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 0.1);
 		pca.updateMesh(mesh);
 		break;
 	case LOWER_L:
-		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 1.f);
+		pca.editFeature(idxFeature, pca.getFeature(idxFeature) + 0.1);
 		pca.updateMesh(mesh);
 		break;
 	case UPPER_I:
