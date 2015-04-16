@@ -52,8 +52,13 @@ private:
 	const static int WINDOW_WIDTH;
 	const static int WINDOW_HEIGHT;
 
-	const static GLfloat EYE_ZOOM_INCR;
-	const static GLfloat EYE_ANGLE_INCR;
+	const static GLfloat FRUSTUM_COEFF;
+	const static GLfloat DEPTH_NEAR;
+	const static GLfloat DEPTH_FAR;
+
+	const static GLfloat ZOOM_INCR;
+	
+	const static GLfloat EYE_DISTANCE;
 
 	const static GLfloat RADIUS_OFFSET;
 	const static GLint CIRCLE_NUM_LINES;
@@ -61,53 +66,64 @@ private:
 	const static Vector3f CIRCLE_XZ_COLOR;
 	const static Vector3f CIRCLE_YZ_COLOR;
 
+	const static GLfloat LIGHT_AMBIENT[4];  /* Grey ambient light. */
+	const static GLfloat LIGHT_POSITION[4];  /* Infinite light location. */
+	const static GLfloat BACKGROUND_COLOUR[4];  /* Background colour. */
 	const static Vector3f GLViewer::MODEL_COLOR;
 
 	static int moving, beginx, beginy;
 	static Vector3f eye;
-	static GLfloat eyeDistance;
-	static Matrix3f eyeRotation;
 	static Vector3f center;
 	static Vector3f up;
-	static GLfloat radius;
-	static GLfloat fieldView;
 	static GLfloat aspectRatio;
 	static GLfloat depthNear, depthFar;
 
 	static GLfloat anglex;   /* in degrees */
 	static GLfloat angley;   /* in degrees */
 
-	static GLfloat light_ambient[4];  /* Grey ambient light. */
-	static GLfloat light_position[4];  /* Infinite light location. */
-
-	static GLfloat background_colour[4];  /* Background colour. */
-
 	static MyMesh mesh;
-	static bool showCircles;
+
+	static GLfloat radius;
+	static int showCircles;
 
 	static int idxFeature;
 
 	static PCA pca;
 
-	static GLUI* glui;
+	static int nFeatures;
+	static float* features;
+
+	static float translation[];
+	static float rotation[];
+
 	static int window_id;
-	//static Feature* features;
+	static GLUI* glui;
+	static GLUI_Translation* glui_trans;
+	static GLUI_Translation* glui_zoom;
+	static GLUI_Checkbox* glui_check_circles;
 
 	//=========================================================================
 
-	static void init(void);
-	static void drawModel(void);
+	static void initGLUT(int *argc, char **argv);
+	static void initGLUI(void);
+
+	static void initGLUIComponents(void);
+	static void initGLUIFeatures(Feature* _features, int _nFeatures);
+
 	static void display(void);
+	static void reshape(int x, int y);
 	static void mouse(int button, int state, int x, int y);
 	static void motion(int x, int y);
-	static void Key(unsigned char key, int x, int y);
-	static void rotateEye(GLfloat angle, int axis);
-	static void zoomEye(GLfloat distance);
+	static void key(unsigned char key, int x, int y);
+	static void zoom(GLfloat distance);
+
 	static void drawCircle(GLfloat radius, Vector3f center, GLint plane,
 		GLint numLines, Vector3f color);
-	static void updateCenterEye();
+	static void calculateRadius();
+	static void idle(void);
+
+	static void drawModel(void);
 	static void drawText(const char *text, int length, int x, int y);
-	static void myGlutIdle(void);
 
 public:
 	static void initialize(int *argcp, char **argv);

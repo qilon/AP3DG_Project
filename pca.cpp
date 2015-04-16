@@ -91,6 +91,7 @@ void PCA::read(string _pca_filename_url, string _features_filename_url)
 
 
 	initAlphas();
+	centerModel();
 }
 //=============================================================================
 void PCA::write(string _pca_filename_url)
@@ -290,5 +291,39 @@ void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 		(n_controllers + 1)*sizeof(MatrixXf::Scalar));
 	out.close();
 
+}
+//=============================================================================
+void PCA::centerModel()
+{
+	float max_x = numeric_limits<float>::min(),
+		max_y = numeric_limits<float>::min(),
+		max_z = numeric_limits<float>::min();
+	float min_x = numeric_limits<float>::max(),
+		min_y = numeric_limits<float>::max(),
+		min_z = numeric_limits<float>::max();
+	for (int i = 0; i < mean_model.size(); i += 3)
+	{
+		max_x = max(max_x, mean_model(i));
+		max_y = max(max_y, mean_model(i + 1));
+		max_z = max(max_z, mean_model(i + 2));
+		min_x = min(min_x, mean_model(i));
+		min_y = min(min_y, mean_model(i + 1));
+		min_z = min(min_z, mean_model(i + 2));
+	}
+
+	Vector3f center;
+	center(0) = min_x + (max_x - min_x) / 2;
+	center(1) = min_y + (max_y - min_y) / 2;
+	center(2) = min_z + (max_z - min_z) / 2;
+
+	for (int i = 0; i < mean_model.size(); i += 3)
+	{
+		mean_model(i) = mean_model(i) - center(i % 3);
+		mean_model(i + 1) = mean_model(i + 1) - center((i + 1) % 3);
+		mean_model(i + 2) = mean_model(i + 2) - center((i + 2) % 3);
+		first_model(i) = first_model(i) - center(i % 3);
+		first_model(i + 1) = first_model(i + 1) - center((i + 1) % 3);
+		first_model(i + 2) = first_model(i + 2) - center((i + 2) % 3);
+	}
 }
 //=============================================================================

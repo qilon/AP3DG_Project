@@ -2,28 +2,26 @@
 //=============================================================================
 using namespace std;
 //=============================================================================
-class Feature
+struct Feature
 {
-private:
 	string name;
-	float value, min_value, max_value, incr_value;
-public:
-	Feature();
-	Feature(string _name, float _value, float _min_value,
-		float _max_value, float _incr_value);
-	~Feature();
+	float init_value, min_value, max_value, incr_value;
 
-	string getName();
-	void setName(string _name);
-	float getValue();
-	void setValue(float _value);
-	float getMinValue();
-	void setMinValue(float _min_value);
-	float getMaxValue();
-	void setMaxValue(float _max_value);
-	float getIncrValue();
-	void setIncrValue(float _incr_value);
-
-	bool increment();
-	bool decrement();
+	Feature()
+	{
+		name = "";
+		init_value = 0.f;
+		min_value = numeric_limits<float>::min();
+		max_value = numeric_limits<float>::max();
+		incr_value = 1.f;
+	};
+	Feature(string _name, float _init_value, float _min_value, float _max_value, 
+		float _incr_value)
+	{
+		name = _name;
+		init_value = _init_value;
+		min_value = _min_value;
+		max_value = _max_value;
+		incr_value = _incr_value;
+	};
 };
