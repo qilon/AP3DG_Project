@@ -215,7 +215,7 @@ int PCA::getControllers()
 void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 	string _feature_filename_url) {
 
-	n_controllers = 2;
+	n_controllers = 8;
 
 	// Reading meshes:
 	MyMesh *meshes = new MyMesh[_n_meshes];
@@ -247,6 +247,48 @@ void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 		Vector3f vLeftArm = model.col(LEFT_WAIST) - model.col(LEFT_AXILLA);
 		float angleLeftArm = acos(uLeftArm.dot(vLeftArm) / (uLeftArm.norm() * vLeftArm.norm()));
 		featuresMeshes(1, iMesh) = angleLeftArm;
+
+		Vector3f uRightElbow = (model.col(RIGHT_SHOULDER) + model.col(RIGHT_AXILLA)
+			- model.col(RIGHT_INSIDE_ELBOW) - model.col(RIGHT_ELBOW)) / 2;
+		Vector3f vRightElbow = (model.col(RIGHT_INSIDE_ELBOW) + model.col(RIGHT_ELBOW)
+			- model.col(RIGHT_BACK_WRIST) - model.col(RIGHT_FRONT_WRIST)) / 2;
+		float angleRightElbow = acos(uRightElbow.dot(vRightElbow) / (uRightElbow.norm() * vRightElbow.norm()));
+		featuresMeshes(2, iMesh) = angleRightElbow;
+
+		Vector3f uLeftElbow = (model.col(LEFT_SHOULDER) + model.col(LEFT_AXILLA)
+			- model.col(LEFT_INSIDE_ELBOW) - model.col(LEFT_ELBOW)) / 2;
+		Vector3f vLeftElbow = (model.col(LEFT_INSIDE_ELBOW) + model.col(LEFT_ELBOW)
+			- model.col(LEFT_BACK_WRIST) - model.col(LEFT_FRONT_WRIST)) / 2;
+		float angleLeftElbow = acos(uLeftElbow.dot(vLeftElbow) / (uLeftElbow.norm() * vLeftElbow.norm()));
+		featuresMeshes(3, iMesh) = angleLeftElbow;
+
+		Vector3f uRightLeg = (2 * model.col(RIGHT_WAIST) + model.col(LEFT_WAIST)) / 3
+			- (model.col(RIGHT_HIP) + model.col(PERINEUM)) / 2;
+		Vector3f vRightLeg = (model.col(RIGHT_HIP) + model.col(PERINEUM)
+			- model.col(RIGHT_KNEE) - model.col(RIGHT_INSIDE_KNEE)) / 2;
+		float angleRightLeg = acos(uRightLeg.dot(vRightLeg) / (uRightLeg.norm() * vRightLeg.norm()));
+		featuresMeshes(4, iMesh) = angleRightLeg;
+
+		Vector3f uLeftLeg = (model.col(RIGHT_WAIST) + 2 * model.col(LEFT_WAIST)) / 3
+			- (model.col(LEFT_HIP) + model.col(PERINEUM)) / 2;
+		Vector3f vLeftLeg = (model.col(LEFT_HIP) + model.col(PERINEUM)
+			- model.col(LEFT_KNEE) - model.col(LEFT_INSIDE_KNEE)) / 2;
+		float angleLeftLeg = acos(uLeftLeg.dot(vLeftLeg) / (uLeftLeg.norm() * vLeftLeg.norm()));
+		featuresMeshes(5, iMesh) = angleLeftLeg;
+
+		Vector3f uRightKnee = (model.col(RIGHT_HIP) + model.col(PERINEUM)
+			- model.col(RIGHT_INSIDE_KNEE) - model.col(RIGHT_KNEE)) / 2;
+		Vector3f vRightKnee = (model.col(RIGHT_INSIDE_KNEE) + model.col(RIGHT_KNEE)
+			- model.col(RIGHT_INSIDE_ANKLE) - model.col(RIGHT_OUTSIDE_ANKLE)) / 2;
+		float angleRightKnee = acos(uRightKnee.dot(vRightKnee) / (uRightKnee.norm() * vRightKnee.norm()));
+		featuresMeshes(6, iMesh) = angleRightKnee;
+
+		Vector3f uLeftKnee = (model.col(LEFT_HIP) + model.col(PERINEUM)
+			- model.col(LEFT_INSIDE_KNEE) - model.col(LEFT_KNEE)) / 2;
+		Vector3f vLeftKnee = (model.col(LEFT_INSIDE_KNEE) + model.col(LEFT_KNEE)
+			- model.col(LEFT_INSIDE_ANKLE) - model.col(LEFT_OUTSIDE_ANKLE)) / 2;
+		float angleLeftKnee = acos(uLeftKnee.dot(vLeftKnee) / (uLeftKnee.norm() * vLeftKnee.norm()));
+		featuresMeshes(7, iMesh) = angleLeftKnee;
 
 		for (int iVert = 0; iVert < nVert; iVert++) {
 			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);

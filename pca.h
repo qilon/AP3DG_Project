@@ -10,6 +10,10 @@
 //=============================================================================
 #define RIGHT_ELBOW 8616
 #define LEFT_ELBOW 8793
+#define RIGHT_BACK_WRIST 6475
+#define RIGHT_FRONT_WRIST 6628
+#define LEFT_BACK_WRIST 6655
+#define LEFT_FRONT_WRIST 6870
 #define RIGHT_KNUCKLE 5165
 #define LEFT_KNUCKLE 5736
 #define RIGHT_SHOULDER 10721
@@ -18,8 +22,19 @@
 #define LEFT_AXILLA 9919
 #define RIGHT_INSIDE_ELBOW 8344
 #define LEFT_INSIDE_ELBOW 8500
-#define LEFT_WAIST 7796
 #define RIGHT_WAIST 7665
+#define LEFT_WAIST 7796
+#define RIGHT_KNEE 2850
+#define LEFT_KNEE 2863
+#define RIGHT_INSIDE_ANKLE 1127
+#define LEFT_INSIDE_ANKLE 1055
+#define RIGHT_OUTSIDE_ANKLE 1082
+#define LEFT_OUTSIDE_ANKLE 1101
+#define RIGHT_INSIDE_KNEE 2703
+#define LEFT_INSIDE_KNEE 2667
+#define RIGHT_HIP 6304
+#define LEFT_HIP 6017
+#define PERINEUM 12492
 //=============================================================================
 using namespace std;
 using namespace Eigen;
