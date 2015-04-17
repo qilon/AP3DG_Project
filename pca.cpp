@@ -5,14 +5,21 @@ PCA::PCA()
 	degrees_freedom = 0;
 	vector_size = 0;
 	n_controllers = 0;
+	initialFeatures = nullptr;
 }
 //=============================================================================
-PCA::PCA(string _pca_filename_url, string _features_filename_url)
+PCA::PCA(string _pca_filename_url, string _features_filename_url) : PCA()
 {
-	read(_pca_filename_url, _features_filename_url);
+	readPCA(_pca_filename_url);
+	readFeatures(_features_filename_url);
 }
 //=============================================================================
-PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
+PCA::PCA(string _pca_filename_url) : PCA()
+{
+	readPCA(_pca_filename_url);
+}
+//=============================================================================
+PCA::PCA(int _n_meshes, string _ply_models_url_preffix) : PCA()
 {
 	// Reading meshes:
 	MyMesh *meshes = new MyMesh[_n_meshes];
@@ -42,11 +49,13 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 //=============================================================================
 PCA::~PCA()
 {
-	delete[] initialFeatures;
-	initialFeatures = nullptr;
+	if (initialFeatures != nullptr) {
+		delete[] initialFeatures;
+		initialFeatures = nullptr;
+	}
 }
 //=============================================================================
-void PCA::read(string _pca_filename_url, string _features_filename_url)
+void PCA::readPCA(string _pca_filename_url)
 {
 	// Load PCA info
 	ifstream inPCA(_pca_filename_url, ios::in | std::ios::binary);
@@ -55,7 +64,7 @@ void PCA::read(string _pca_filename_url, string _features_filename_url)
 	inPCA.read((char*)(&vector_size), sizeof(int));
 
 	cout << "Degrees of freedom: " << degrees_freedom << endl;
-	cout << "Eigenvectors rows: " << vector_size << endl; 
+	cout << "Eigenvectors rows: " << vector_size << endl;
 
 	eigen_vectors.resize(vector_size, degrees_freedom);
 	eigen_values.resize(degrees_freedom);
@@ -72,7 +81,10 @@ void PCA::read(string _pca_filename_url, string _features_filename_url)
 		vector_size*sizeof(VectorXf::Scalar));
 
 	inPCA.close();
-
+}
+//=============================================================================
+void PCA::readFeatures(string _features_filename_url)
+{
 	// Load features
 	ifstream inFeatures(_features_filename_url, ios::in | std::ios::binary);
 	
@@ -93,7 +105,7 @@ void PCA::read(string _pca_filename_url, string _features_filename_url)
 	centerModel();
 }
 //=============================================================================
-void PCA::write(string _pca_filename_url)
+void PCA::writePCA(string _pca_filename_url)
 {
 	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
 
@@ -231,8 +243,7 @@ int PCA::getControllers()
 	return n_controllers;
 }
 //=============================================================================
-void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
-	string _feature_filename_url) {
+void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 
 	n_controllers = 8;
 
@@ -332,10 +343,10 @@ void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 	}
 
 	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
-	MatrixXf M_feature2Alpha = alphasMeshes * featuresInv;
+	M_feature2Alpha = alphasMeshes * featuresInv;
 
 	// Calculate initial features
-	FeatureConfig* initialFeatures = new FeatureConfig[n_controllers];
+	initialFeatures = new FeatureConfig[n_controllers];
 	initialFeatures[0] = FeatureConfig("Right arm", featuresMeshes(0, 0), -5, 5, 0.1);
 	initialFeatures[1] = FeatureConfig("Left arm", featuresMeshes(1, 0), -5, 5, 0.1);
 	initialFeatures[2] = FeatureConfig("Right elbow", featuresMeshes(2, 0), -5, 5, 0.1);
@@ -344,7 +355,10 @@ void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 	initialFeatures[5] = FeatureConfig("Left leg", featuresMeshes(5, 0), -5, 5, 0.1);
 	initialFeatures[6] = FeatureConfig("Right knee", featuresMeshes(6, 0), -5, 5, 0.1);
 	initialFeatures[7] = FeatureConfig("Left knee", featuresMeshes(7, 0), -5, 5, 0.1);
-
+}
+//=============================================================================
+void PCA::writeFeatures(string _feature_filename_url)
+{
 	ofstream out(_feature_filename_url, ios::out | std::ios::binary | ios::trunc);
 
 	out.write((char*)(&n_controllers), sizeof(int));
@@ -380,12 +394,12 @@ void PCA::centerModel()
 
 	for (int i = 0; i < mean_model.size(); i += 3)
 	{
-		mean_model(i) = mean_model(i) - center(i % 3);
-		mean_model(i + 1) = mean_model(i + 1) - center((i + 1) % 3);
-		mean_model(i + 2) = mean_model(i + 2) - center((i + 2) % 3);
-		first_model(i) = first_model(i) - center(i % 3);
-		first_model(i + 1) = first_model(i + 1) - center((i + 1) % 3);
-		first_model(i + 2) = first_model(i + 2) - center((i + 2) % 3);
+		mean_model(i) = mean_model(i) - center(0);
+		mean_model(i + 1) = mean_model(i + 1) - center(1);
+		mean_model(i + 2) = mean_model(i + 2) - center(2);
+		first_model(i) = first_model(i) - center(0);
+		first_model(i + 1) = first_model(i + 1) - center(1);
+		first_model(i + 2) = first_model(i + 2) - center(2);
 	}
 }
 //=============================================================================

@@ -46,16 +46,18 @@ public:
 	PCA();
 	PCA(int _n_meshes, string _ply_models_url_preffix);
 	PCA(string _pca_filename_url, string _features_filename_url);
+	PCA(string _pca_filename_url);
 	virtual ~PCA();
-	void read(string _pca_filename_url, string _features_filename_url);
-	void write(string _pca_filename_url);
+	void readPCA(string _pca_filename_url);
+	void readFeatures(string _features_filename_url);
+	void writePCA(string _pca_filename_url);
+	void computeFeatures(int _n_meshes, string _ply_models_url_preffix);
+	void writeFeatures(string _feature_filename_url);
 	void updateMesh(MyMesh& _mesh);
 	void editFeature(int idxFeature, float new_value);
-	float PCA::getFeature(int idxFeature);
+	float getFeature(int idxFeature);
 	FeatureConfig* getInitialFeatures();
-	int PCA::getControllers();
-	void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
-		string _feature_filename_url);
+	int getControllers();
 
 private:
 	int degrees_freedom;

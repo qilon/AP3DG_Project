@@ -400,7 +400,8 @@ void GLViewer::drawCircle(GLfloat radius, Vector3f center, GLint plane,
 //=============================================================================
 void GLViewer::loadPCA(string _pca_filename_url, string _features_filename_url)
 {
-	pca.read(_pca_filename_url, _features_filename_url);
+	pca.readPCA(_pca_filename_url);
+	pca.readFeatures(_features_filename_url);
 
 	// Update mesh based on the pca
 	pca.updateMesh(mesh);
