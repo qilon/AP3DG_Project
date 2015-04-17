@@ -1,11 +1,16 @@
 #include "GLViewer.h"
 //=============================================================================
-const char* GLViewer::WINDOW_TITLE = "AP3DG";
-const int GLViewer::WINDOW_WIDTH = 800;
+const char* GLViewer::WINDOW_TITLE = "AP3DG - Qi Liu & Pierre Jestin";
+const int GLViewer::WINDOW_WIDTH = 1000;
 const int GLViewer::WINDOW_HEIGHT = 800;
 
-const GLfloat GLViewer::EYE_ZOOM_INCR = 0.1f;
-const GLfloat GLViewer::EYE_ANGLE_INCR = M_PI / 36;
+const GLfloat GLViewer::FRUSTUM_COEFF = 0.025f;
+const GLfloat GLViewer::DEPTH_NEAR = 0.1f;
+const GLfloat GLViewer::DEPTH_FAR = 50.0f;
+
+const GLfloat GLViewer::ZOOM_INCR = 0.2f;
+
+const GLfloat GLViewer::EYE_DISTANCE = 5.0f;
 
 const GLfloat GLViewer::RADIUS_OFFSET = .1f;
 const GLint GLViewer::CIRCLE_NUM_LINES = 100;
@@ -13,83 +18,84 @@ const Vector3f GLViewer::CIRCLE_XY_COLOR = {1.f, 0.f, 0.f};
 const Vector3f GLViewer::CIRCLE_XZ_COLOR = { 0.f, 1.f, 0.f };
 const Vector3f GLViewer::CIRCLE_YZ_COLOR = { 0.f, 0.f, 1.f };
 
-const Vector3f GLViewer::MODEL_COLOR = { 1.f, 0.89f, 0.79f };  /* Diffuse light. */
+const GLfloat GLViewer::LIGHT_AMBIENT[4] = { 0.1, 0.1, 0.1, 1.0 };  /* Ambient light. */
+const GLfloat GLViewer::LIGHT_POSITION[4] = { .5, .5, 1.0, 0.0 };  /* Infinite light location. */
+const GLfloat GLViewer::BACKGROUND_COLOUR[4] = { 0.9f, 0.9f, 0.9f, 1.0f };	/* Background colour. */
+
+const Vector3f GLViewer::MODEL_COLOR = { .9f, .79f, .69f };  /* Diffuse light. */
 
 int GLViewer::moving = 0;
 int GLViewer::beginx = 0;
 int GLViewer::beginy = 0;
 
-Vector3f GLViewer::eye = { 0.0f, 0.0f, eyeDistance };
-GLfloat GLViewer::eyeDistance = 5.0f;
-Matrix3f GLViewer::eyeRotation = Matrix3f::Identity();
+Vector3f GLViewer::eye = { 0.0f, 0.0f, EYE_DISTANCE };
 Vector3f GLViewer::center = { 0.0f, 0.0f, 0.0f };
 Vector3f GLViewer::up = { 0.0f, 1.0f, 0.0f };
 
-GLfloat GLViewer::fieldView = 40.0;
 GLfloat GLViewer::aspectRatio = 1.0f;
-GLfloat GLViewer::depthNear = 1.0f;
-GLfloat GLViewer::depthFar = 50.0f;
 
 GLfloat GLViewer::anglex = 0;   /* in degrees */
 GLfloat GLViewer::angley = 0;   /* in degrees */
 
-GLfloat GLViewer::light_ambient[4] = { 0.1, 0.1, 0.1, 1.0 };  /* Ambient light. */
-GLfloat GLViewer::light_position[4] = { 1.0, 1.0, 1.0, 0.0 };  /* Infinite light location. */
-
-GLfloat GLViewer::background_colour[4] = { 0.4f, 0.4f, 0.4f, 0.0f };	/* Background colour. */
-
 MyMesh GLViewer::mesh;
 
 GLfloat GLViewer::radius = 1.f;
-bool GLViewer::showCircles = true;
+int GLViewer::showCircles = 1;
 
 int GLViewer::idxFeature = 0;
 
 PCA GLViewer::pca = PCA();
 
+GLUI* GLViewer::glui;
+int GLViewer::window_id;
+
+int GLViewer::nFeatures = 0;
+float* GLViewer::features;
+
+float GLViewer::translation[3] = { 0.f, 0.f, 0.f };
+float GLViewer::rotation[16] = { 
+	1, 0, 0, 0, 
+	0, 1, 0, 0, 
+	0, 0, 1, 0, 
+	0, 0, 0, 1 
+};
+
+GLUI_Translation* GLViewer::glui_trans;
+GLUI_Translation* GLViewer::glui_zoom;
+GLUI_Checkbox* GLViewer::glui_check_circles;
 //=============================================================================
 void GLViewer::initialize(int *argc, char **argv)
+{
+	initGLUT(argc, argv);
+	initGLUI();
+}
+//=============================================================================
+void GLViewer::initGLUT(int *argc, char **argv)
 {
 	glutInit(argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow(WINDOW_TITLE);
+
+	glutInitWindowPosition((glutGet(GLUT_SCREEN_WIDTH) - WINDOW_WIDTH) / 2,
+		10);
+	//glutInitWindowPosition(20, 20);
+	window_id = glutCreateWindow(WINDOW_TITLE);
 
 	glutDisplayFunc(display);
-	glutMouseFunc(mouse);
-	glutKeyboardFunc(Key);
 	glutMotionFunc(motion);
 
-	init();
-}
-//=============================================================================
-void GLViewer::init(void)
-{
 	glewInit();
 
-	/* Setup the view of the cube. */
-	glMatrixMode(GL_PROJECTION);
-	gluPerspective( /* field of view in degree */ fieldView,
-		/* aspect ratio */ aspectRatio,
-		/* Z near */ depthNear, /* Z far */ depthFar);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	gluLookAt(eye(0), eye(1), eye(2),	/* eye */
-		center(0), center(1), center(2),	/* center */
-		up(0), up(1), up(2));      /* up is in positive Y direction */
-
 	/* Enable a single OpenGL light. */
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 	//glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
 	glEnable(GL_COLOR_MATERIAL);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, LIGHT_AMBIENT);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHTING);
 
-	glClearColor(background_colour[0], background_colour[1], 
-		background_colour[2], background_colour[3]);
+	glClearColor(BACKGROUND_COLOUR[0], BACKGROUND_COLOUR[1], 
+		BACKGROUND_COLOUR[2], BACKGROUND_COLOUR[3]);
 
 	/* Use depth buffering for hidden surface elimination. */
 	glEnable(GL_DEPTH_TEST);
@@ -100,9 +106,29 @@ void GLViewer::init(void)
 	idxFeature = 0;
 }
 //=============================================================================
+void GLViewer::initGLUI(void)
+{
+	glui = GLUI_Master.create_glui_subwindow(window_id,
+		GLUI_SUBWINDOW_RIGHT);
+	glui->set_main_gfx_window(window_id);
+
+	GLUI_Master.set_glutReshapeFunc(reshape);
+	GLUI_Master.set_glutKeyboardFunc(key);
+	GLUI_Master.set_glutSpecialFunc(NULL);
+	GLUI_Master.set_glutMouseFunc(mouse);
+	GLUI_Master.set_glutIdleFunc(idle);
+}
+//=============================================================================
 void GLViewer::display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glFrustum(-aspectRatio*FRUSTUM_COEFF, aspectRatio*FRUSTUM_COEFF, 
+		-FRUSTUM_COEFF, FRUSTUM_COEFF, DEPTH_NEAR, DEPTH_FAR);
+
+	glMatrixMode(GL_MODELVIEW);
 
 	/* Adjust cube position according to user input */
 	/* Note, this is very basic, and suffers from Gimball lock */
@@ -112,35 +138,35 @@ void GLViewer::display(void)
 		center[0], center[1], center[2], /* center */
 		up[0], up[1], up[2]);      /* up is in positive Y direction */
 
-	//glTranslatef(meshTranslation[0], meshTranslation[1], meshTranslation[2]);
-	//glRotatef(anglex, 1.0, 0.0, 0.0);
-	//glRotatef(angley, 0.0, 1.0, 0.0);
-	//glRotatef(anglez, 0.0, 0.0, 1.0);
+	// Translation
+	glTranslatef(translation[0], translation[1], translation[2]);
 
-	glMatrixMode(GL_MODELVIEW);
+	// Rotation
+	glMultMatrixf(rotation);
 
 	drawModel();
 
 	if (showCircles)
 	{
+		glDisable(GL_LIGHTING);
 		drawCircle(radius, center, 0, CIRCLE_NUM_LINES, CIRCLE_XY_COLOR);
 		drawCircle(radius, center, 1, CIRCLE_NUM_LINES, CIRCLE_XZ_COLOR);
 		drawCircle(radius, center, 2, CIRCLE_NUM_LINES, CIRCLE_YZ_COLOR);
+		glEnable(GL_LIGHTING);
 	}
 
-	// Draw text with information on eigenvectors
-	stringstream ss;
-	glColor3f(0, 0, 0);
-	ss << "Feature number: " << idxFeature;
-	string str = ss.str();
-	drawText(str.data(), str.size(), 0, 590);
-	ss.str("");
-	ss.clear();
-	ss << "Value: " << pca.getFeature(idxFeature);
-	str = ss.str();
-	drawText(str.data(), str.size(), 0, 580);
-
 	glutSwapBuffers();
+}
+//=============================================================================
+void GLViewer::reshape(int x, int y)
+{
+	int tx, ty, tw, th;
+	GLUI_Master.get_viewport_area(&tx, &ty, &tw, &th);
+	glViewport(tx, ty, tw, th);
+
+	aspectRatio = (float)tw / (float)th;
+
+	glutPostRedisplay();
 }
 //=============================================================================
 void GLViewer::mouse(int button, int state, int x, int y)
@@ -153,15 +179,30 @@ void GLViewer::mouse(int button, int state, int x, int y)
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
 		moving = 0;
 	}
+	// Wheel scroll down
+	if (button == 3 && state == GLUT_DOWN) {
+		zoom(ZOOM_INCR);
+	}
+	// Wheel scroll up
+	if (button == 4 && state == GLUT_DOWN) {
+		zoom(-ZOOM_INCR);
+	}
 }
 //=============================================================================
 void GLViewer::motion(int x, int y)
 {
 	if (moving) {
-		anglex = anglex + (x - beginx);
-		angley = angley + (y - beginy);
+		// TODO: change to depend on z translation
+		float disp_x = (x - beginx) * 0.0025f;
+		float disp_y = -(y - beginy) * 0.0025f;
 		beginx = x;
 		beginy = y;
+
+		translation[0] += disp_x;
+		translation[1] += disp_y;
+
+		glui_trans->set_float_array_val(translation);
+
 		glutPostRedisplay();
 	}
 }
@@ -198,61 +239,51 @@ void GLViewer::drawModel(void)
  * C   -> Show/hide guidance circles
  * K/L -> Change alpha coefficient
  */
-void GLViewer::Key(unsigned char key, int x, int y) {
+void GLViewer::key(unsigned char key, int x, int y) {
 	switch (key) {
 	case UPPER_W:
-		rotateEye(-EYE_ANGLE_INCR, 0);
 		break;
 	case LOWER_W:
-		rotateEye(-EYE_ANGLE_INCR, 0);
 		break;
 	case UPPER_S:
-		rotateEye(EYE_ANGLE_INCR, 0);
 		break;
 	case LOWER_S:
-		rotateEye(EYE_ANGLE_INCR, 0);
 		break;
 	case UPPER_A:
-		rotateEye(-EYE_ANGLE_INCR, 1);
 		break;
 	case LOWER_A:
-		rotateEye(-EYE_ANGLE_INCR, 1);
 		break;
 	case UPPER_D:
-		rotateEye(EYE_ANGLE_INCR, 1);
 		break;
 	case LOWER_D:
-		rotateEye(EYE_ANGLE_INCR, 1);
 		break;
 	case UPPER_Q:
-		rotateEye(-EYE_ANGLE_INCR, 2);
 		break;
 	case LOWER_Q:
-		rotateEye(-EYE_ANGLE_INCR, 2);
 		break;
 	case UPPER_E:
-		rotateEye(EYE_ANGLE_INCR, 2);
 		break;
 	case LOWER_E:
-		rotateEye(EYE_ANGLE_INCR, 2);
 		break;
 	case UPPER_R:
-		zoomEye(-EYE_ZOOM_INCR);
+		zoom(ZOOM_INCR);
 		break;
 	case LOWER_R:
-		zoomEye(-EYE_ZOOM_INCR);
+		zoom(ZOOM_INCR);
 		break;
 	case UPPER_F:
-		zoomEye(EYE_ZOOM_INCR);
+		zoom(-ZOOM_INCR);
 		break;
 	case LOWER_F:
-		zoomEye(EYE_ZOOM_INCR);
+		zoom(-ZOOM_INCR);
 		break;
 	case UPPER_C:
 		showCircles = !showCircles;
+		glui_check_circles->set_int_val(showCircles);
 		break;
 	case LOWER_C:
 		showCircles = !showCircles;
+		glui_check_circles->set_int_val(showCircles);
 		break;
 	case UPPER_K:
 		pca.editFeature(idxFeature, pca.getFeature(idxFeature) - 0.1);
@@ -311,59 +342,16 @@ void GLViewer::setMesh(MyMesh& _mesh)
 		mesh.update_normals();
 	}
 
-	updateCenterEye();
+	calculateRadius();
 
 	glutPostRedisplay();
 }
 //=============================================================================
-void GLViewer::rotateEye(GLfloat angle, int axis)
+void GLViewer::zoom(GLfloat distance)
 {
-	GLfloat cos_angle = cos(angle);
-	GLfloat sin_angle = sin(angle);
+	translation[2] += distance;
 
-	Vector3f originalEye;
-	originalEye << 0.f, 0.f, eyeDistance;
-
-	Matrix3f newRotation = Matrix3f::Identity();
-
-	switch (axis)
-	{
-	case 0: // x
-		newRotation(1, 1) = cos_angle;
-		newRotation(1, 2) = -sin_angle;
-		newRotation(2, 1) = sin_angle;
-		newRotation(2, 2) = cos_angle;
-		break;
-	case 1: // y
-		newRotation(0, 0) = cos_angle;
-		newRotation(0, 2) = sin_angle;
-		newRotation(2, 0) = -sin_angle;
-		newRotation(2, 2) = cos_angle;
-		break;
-	case 2: // z
-		newRotation(0, 0) = cos_angle;
-		newRotation(0, 1) = -sin_angle;
-		newRotation(1, 0) = sin_angle;
-		newRotation(1, 1) = cos_angle;
-		break;
-	default:
-		break;
-	}
-
-	eyeRotation = newRotation * eyeRotation;
-
-	eye = center + (eyeRotation * originalEye);
-
-	up = eyeRotation.col(1);
-}
-//=============================================================================
-void GLViewer::zoomEye(GLfloat distance)
-{
-	eyeDistance = eyeDistance + distance;
-	Vector3f originalEye;
-	originalEye << 0.f, 0.f, eyeDistance;
-
-	eye = center + eyeRotation * originalEye;
+	glui_zoom->set_z(translation[2]);
 }
 //=============================================================================
 void GLViewer::run()
@@ -375,8 +363,6 @@ void GLViewer::drawCircle(GLfloat radius, Vector3f center, GLint plane,
 	GLint numLines, Vector3f color)
 {
 	glPushMatrix();
-	// Translation
-	glTranslatef(center(0), center(1), center(2));
 
 	// Rotation
 	switch (plane)
@@ -420,10 +406,13 @@ void GLViewer::loadPCA(string _pca_filename_url, string _features_filename_url)
 	// Update mesh based on the pca
 	pca.updateMesh(mesh);
 
-	updateCenterEye();
+	calculateRadius();
+
+	// Initialize UI components based on the features defined in PCA
+	initGLUIComponents();
 }
 //=============================================================================
-void GLViewer::updateCenterEye()
+void GLViewer::calculateRadius()
 {
 	GLfloat max_x = numeric_limits<float>::min(),
 		max_y = numeric_limits<float>::min(),
@@ -444,19 +433,7 @@ void GLViewer::updateCenterEye()
 		min_z = min(min_z, p[2]);
 	}
 
-	center(0) = min_x + (max_x - min_x) / 2;
-	center(1) = min_y + (max_y - min_y) / 2;
-	center(2) = min_z + (max_z - min_z) / 2;
-
-	eye(0) = center(0);
-	eye(1) = center(1);
-	eye(2) = center(2) + eyeDistance;
-
-	up(0) = 0.0f;
-	up(1) = 1.0f;
-	up(2) = 0.0f;
-
-	radius = center.cwiseAbs().maxCoeff() + RADIUS_OFFSET;
+	radius = max(max_x,max(max_y,max_z)) + RADIUS_OFFSET;
 }
 //=============================================================================
 // https://www.youtube.com/watch?v=elE__Nouv54
@@ -478,5 +455,71 @@ void GLViewer::drawText(const char *text, int length, int x, int y) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixd(matrix);
 	glMatrixMode(GL_MODELVIEW);
+}
+//=============================================================================
+void GLViewer::idle(void)
+{
+	/* According to the GLUT specification, the current window is
+	undefined during an idle callback.  So we need to explicitly change
+	it if necessary */
+	if (glutGetWindow() != window_id)
+		glutSetWindow(window_id);
+
+	glutPostRedisplay();
+}
+//=============================================================================
+void GLViewer::initGLUIComponents(void)
+{
+	/* Load features from PCA */
+	nFeatures = 1;
+	Feature* f = new Feature[nFeatures];
+
+	f[0] = Feature("Test", 1.0f, -1.f, 3.f, .5f);
+
+	initGLUIFeatures(f, nFeatures);
+
+	delete[] f;
+	f = nullptr;
+
+
+	/* Control Panel */
+	GLUI_Panel* control_panel = glui->add_panel("Controls", GLUI_PANEL_NONE);
+
+	GLUI_Panel* trans_panel = glui->add_panel_to_panel(control_panel, "Translations",
+		GLUI_PANEL_NONE);
+
+	glui_trans =
+		new GLUI_Translation(trans_panel, "Translate", GLUI_TRANSLATION_XY, translation);
+	glui_trans->set_speed(.005);
+
+	glui->add_column_to_panel(trans_panel, 0);
+
+	glui_zoom =
+		new GLUI_Translation(trans_panel, "Zoom", GLUI_TRANSLATION_Z, &translation[2]);
+	glui_zoom->set_speed(.005);
+
+	GLUI_Rotation *glui_rot = new GLUI_Rotation(control_panel, "Rotate", rotation);
+	glui_rot->set_spin(.98);
+
+	glui_check_circles =
+		new GLUI_Checkbox(control_panel, "Guidance circles", &showCircles);
+	glui_check_circles->set_alignment(GLUI_ALIGN_RIGHT);
+}
+//=============================================================================
+void GLViewer::initGLUIFeatures(Feature* _features, int _nFeatures)
+{
+	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
+	features = new float[_nFeatures];
+	for (int i = 0; i < _nFeatures; i++)
+	{
+		GLUI_Spinner *spinner =
+			new GLUI_Spinner(features_panel, _features[i].name.c_str(),
+			&features[i]);
+		spinner->set_float_limits(_features[i].min_value,
+			_features[i].max_value);
+		spinner->set_float_val(_features[i].init_value);
+		//spinner->set_speed(_features[i].getIncrValue());
+		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+	}
 }
 //=============================================================================

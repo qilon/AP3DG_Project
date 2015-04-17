@@ -110,7 +110,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OPENMESH_PATH_X64)\lib;$(ProjectDir)\external\lib\x64;C:\Program Files\OpenMesh 3.3\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freeglutd.lib;GLU32.lib;OPENGL32.lib;glew32.lib;OpenMeshCored.lib;OpenMeshToolsd.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glui32d.lib;freeglutd.lib;GLU32.lib;OPENGL32.lib;glew32.lib;OpenMeshCored.lib;OpenMeshToolsd.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -153,7 +153,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(OPENMESH_PATH_X64)\lib;$(ProjectDir)\external\lib\x64;C:\Program Files\OpenMesh 3.3\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freeglut.lib;GLU32.lib;OPENGL32.lib;glew32.lib;OpenMeshCore.lib;OpenMeshTools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glui32.lib;freeglut.lib;GLU32.lib;OPENGL32.lib;glew32.lib;OpenMeshCore.lib;OpenMeshTools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -163,6 +163,7 @@
     <ClCompile Include="MyMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Feature.h" />
     <ClInclude Include="GLViewer.h" />
     <ClInclude Include="pca.h" />
     <ClInclude Include="MyMesh.h" />

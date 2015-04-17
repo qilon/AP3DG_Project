@@ -69,5 +69,6 @@ private:
 
 	void initAlphas();
 	void computePCA(MyMesh* meshes, int _n_meshes);
+	void centerModel();
 };
 //=============================================================================
