@@ -163,7 +163,7 @@
     <ClCompile Include="MyMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Feature.h" />
+    <ClInclude Include="FeatureConfig.h" />
     <ClInclude Include="GLViewer.h" />
     <ClInclude Include="pca.h" />
     <ClInclude Include="MyMesh.h" />

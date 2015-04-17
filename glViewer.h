@@ -9,7 +9,6 @@
 #endif
 
 #include "pca.h"
-#include "Feature.h"
 //=============================================================================
 #define UPPER_A 65
 #define LOWER_A 97
@@ -90,7 +89,6 @@ private:
 
 	static PCA pca;
 
-	static int nFeatures;
 	static float* features;
 
 	static float translation[];
@@ -108,7 +106,7 @@ private:
 	static void initGLUI(void);
 
 	static void initGLUIComponents(void);
-	static void initGLUIFeatures(Feature* _features, int _nFeatures);
+	static void initGLUIFeatures(FeatureConfig* _features, int _nFeatures);
 
 	static void display(void);
 	static void reshape(int x, int y);
@@ -121,6 +119,7 @@ private:
 		GLint numLines, Vector3f color);
 	static void calculateRadius();
 	static void idle(void);
+	static void updateFeatures(int _idxFeature);
 
 	static void drawModel(void);
 	static void drawText(const char *text, int length, int x, int y);

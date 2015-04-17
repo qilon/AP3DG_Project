@@ -49,7 +49,6 @@ PCA GLViewer::pca = PCA();
 GLUI* GLViewer::glui;
 int GLViewer::window_id;
 
-int GLViewer::nFeatures = 0;
 float* GLViewer::features;
 
 float GLViewer::translation[3] = { 0.f, 0.f, 0.f };
@@ -471,16 +470,8 @@ void GLViewer::idle(void)
 void GLViewer::initGLUIComponents(void)
 {
 	/* Load features from PCA */
-	nFeatures = 1;
-	Feature* f = new Feature[nFeatures];
-
-	f[0] = Feature("Test", 1.0f, -1.f, 3.f, .5f);
-
-	initGLUIFeatures(f, nFeatures);
-
-	delete[] f;
-	f = nullptr;
-
+	int n_controllers = pca.getControllers();
+	initGLUIFeatures(pca.getInitialFeatures(), n_controllers);
 
 	/* Control Panel */
 	GLUI_Panel* control_panel = glui->add_panel("Controls", GLUI_PANEL_NONE);
@@ -506,15 +497,23 @@ void GLViewer::initGLUIComponents(void)
 	glui_check_circles->set_alignment(GLUI_ALIGN_RIGHT);
 }
 //=============================================================================
-void GLViewer::initGLUIFeatures(Feature* _features, int _nFeatures)
+void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
 	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
+	cout << _nFeatures << endl;
 	features = new float[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
 	{
+		cout << "Feature " << i << ": " << _features[i].name.c_str() << endl;
+		cout << "Feature " << i << ": " << _features[i].init_value << endl;
+		cout << "Feature " << i << ": " << _features[i].min_value << endl;
+		cout << "Feature " << i << ": " << _features[i].max_value << endl;
+		cout << "Feature " << i << ": " << _features[i].incr_value << endl;
+
+		features[i] = _features[i].init_value;
 		GLUI_Spinner *spinner =
 			new GLUI_Spinner(features_panel, _features[i].name.c_str(),
-			&features[i]);
+			&features[i], i, updateFeatures);
 		spinner->set_float_limits(_features[i].min_value,
 			_features[i].max_value);
 		spinner->set_float_val(_features[i].init_value);
@@ -523,3 +522,8 @@ void GLViewer::initGLUIFeatures(Feature* _features, int _nFeatures)
 	}
 }
 //=============================================================================
+void GLViewer::updateFeatures(int _idxFeature)
+{
+	pca.editFeature(_idxFeature, features[_idxFeature]);
+	pca.updateMesh(mesh);
+}

@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include "MyMesh.h"
+#include "FeatureConfig.h"
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
 #include <Eigen/Dense>
@@ -51,6 +52,7 @@ public:
 	void updateMesh(MyMesh& _mesh);
 	void editFeature(int idxFeature, float new_value);
 	float PCA::getFeature(int idxFeature);
+	FeatureConfig* getInitialFeatures();
 	int PCA::getControllers();
 	void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 		string _feature_filename_url);
@@ -66,8 +68,10 @@ private:
 	VectorXf alphas;
 	VectorXf features;
 	MatrixXf M_feature2Alpha;
+	FeatureConfig* initialFeatures;
 
 	void initAlphas();
+	void initFeatures();
 	void computePCA(MyMesh* meshes, int _n_meshes);
 	void centerModel();
 };

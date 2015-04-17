@@ -4,6 +4,7 @@ PCA::PCA()
 {
 	degrees_freedom = 0;
 	vector_size = 0;
+	n_controllers = 0;
 }
 //=============================================================================
 PCA::PCA(string _pca_filename_url, string _features_filename_url)
@@ -41,6 +42,8 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 //=============================================================================
 PCA::~PCA()
 {
+	//delete[] initialFeatures;
+	//initialFeatures = nullptr;
 }
 //=============================================================================
 void PCA::read(string _pca_filename_url, string _features_filename_url)
@@ -77,15 +80,16 @@ void PCA::read(string _pca_filename_url, string _features_filename_url)
 	
 	cout << "Number of controllers: " << n_controllers << endl;
 	M_feature2Alpha.resize(degrees_freedom, n_controllers + 1);
-	features.resize(n_controllers + 1);
+	initialFeatures = new FeatureConfig[n_controllers];
 
 	inFeatures.read((char *)M_feature2Alpha.data(),
 		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
-	inFeatures.read((char *)features.data(),
-		(n_controllers + 1)*sizeof(VectorXf::Scalar));
+	inFeatures.read((char *)initialFeatures,
+		n_controllers*sizeof(FeatureConfig));
 	inFeatures.close();
 
 	initAlphas();
+	initFeatures();
 	centerModel();
 }
 //=============================================================================
@@ -171,7 +175,7 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 //=============================================================================
 void PCA::updateMesh(MyMesh& _mesh)
 {
-	VectorXf new_model = mean_model;
+	VectorXf new_model = first_model;
 
 	alphas = M_feature2Alpha * features;
 
@@ -197,6 +201,14 @@ void PCA::initAlphas()
 {
 	alphas = VectorXf::Zero(degrees_freedom);
 }
+void PCA::initFeatures()
+{
+	features.resize(n_controllers + 1);
+	for (int iFeature = 0; iFeature < n_controllers; iFeature++) {
+		features(iFeature) = initialFeatures[iFeature].init_value;
+	}
+	features(n_controllers) = 1;
+}
 //=============================================================================
 void PCA::editFeature(int idxFeature, float new_value)
 {
@@ -206,6 +218,11 @@ void PCA::editFeature(int idxFeature, float new_value)
 float PCA::getFeature(int idxFeature)
 {
 	return features(idxFeature);
+}
+//=============================================================================
+FeatureConfig* PCA::getInitialFeatures()
+{
+	return initialFeatures;
 }
 //=============================================================================
 int PCA::getControllers()
@@ -317,15 +334,23 @@ void PCA::writeFeatures(int _n_meshes, string _ply_models_url_preffix,
 	MatrixXf M_feature2Alpha = alphasMeshes * featuresInv;
 
 	// Calculate initial features
-	VectorXf initialFeatures = featuresMeshes.col(0);
+	FeatureConfig* initialFeatures = new FeatureConfig[n_controllers];
+	initialFeatures[0] = FeatureConfig("Right arm", featuresMeshes(0, 0), -5, 5, 0.1);
+	initialFeatures[1] = FeatureConfig("Left arm", featuresMeshes(1, 0), -5, 5, 0.1);
+	initialFeatures[2] = FeatureConfig("Right elbow", featuresMeshes(2, 0), -5, 5, 0.1);
+	initialFeatures[3] = FeatureConfig("Left elbow", featuresMeshes(3, 0), -5, 5, 0.1);
+	initialFeatures[4] = FeatureConfig("Right leg", featuresMeshes(4, 0), -5, 5, 0.1);
+	initialFeatures[5] = FeatureConfig("Left leg", featuresMeshes(5, 0), -5, 5, 0.1);
+	initialFeatures[6] = FeatureConfig("Right knee", featuresMeshes(6, 0), -5, 5, 0.1);
+	initialFeatures[7] = FeatureConfig("Left knee", featuresMeshes(7, 0), -5, 5, 0.1);
 
 	ofstream out(_feature_filename_url, ios::out | std::ios::binary | ios::trunc);
 
 	out.write((char*)(&n_controllers), sizeof(int));
 	out.write((char*)M_feature2Alpha.data(),
 		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
-	out.write((char*)initialFeatures.data(),
-		(n_controllers + 1)*sizeof(VectorXf::Scalar));
+	out.write((char*)initialFeatures,
+		n_controllers*sizeof(FeatureConfig));
 	out.close();
 }
 //=============================================================================
