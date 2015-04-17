@@ -504,7 +504,7 @@ void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 	features = new float[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
 	{
-		cout << "Feature " << i << ": " << _features[i].name.c_str() << endl;
+		cout << "Feature " << i << ": " << _features[i].name << endl;
 		cout << "Feature " << i << ": " << _features[i].init_value << endl;
 		cout << "Feature " << i << ": " << _features[i].min_value << endl;
 		cout << "Feature " << i << ": " << _features[i].max_value << endl;
@@ -512,7 +512,7 @@ void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 
 		features[i] = _features[i].init_value;
 		GLUI_Spinner *spinner =
-			new GLUI_Spinner(features_panel, _features[i].name.c_str(),
+			new GLUI_Spinner(features_panel, _features[i].name,
 			&features[i], i, updateFeatures);
 		spinner->set_float_limits(_features[i].min_value,
 			_features[i].max_value);

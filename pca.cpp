@@ -42,8 +42,8 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix)
 //=============================================================================
 PCA::~PCA()
 {
-	//delete[] initialFeatures;
-	//initialFeatures = nullptr;
+	delete[] initialFeatures;
+	initialFeatures = nullptr;
 }
 //=============================================================================
 void PCA::read(string _pca_filename_url, string _features_filename_url)
@@ -201,6 +201,7 @@ void PCA::initAlphas()
 {
 	alphas = VectorXf::Zero(degrees_freedom);
 }
+//=============================================================================
 void PCA::initFeatures()
 {
 	features.resize(n_controllers + 1);

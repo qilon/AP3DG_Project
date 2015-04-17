@@ -46,7 +46,7 @@ public:
 	PCA();
 	PCA(int _n_meshes, string _ply_models_url_preffix);
 	PCA(string _pca_filename_url, string _features_filename_url);
-	~PCA();
+	virtual ~PCA();
 	void read(string _pca_filename_url, string _features_filename_url);
 	void write(string _pca_filename_url);
 	void updateMesh(MyMesh& _mesh);
