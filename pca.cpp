@@ -19,7 +19,8 @@ PCA::PCA(string _pca_filename_url) : PCA()
 	readPCA(_pca_filename_url);
 }
 //=============================================================================
-PCA::PCA(int _n_meshes, string _ply_models_url_preffix) : PCA()
+PCA::PCA(int _n_meshes, string _ply_models_url_preffix, 
+	string _ply_models_url_suffix, int first_index) : PCA()
 {
 	// Reading meshes:
 	MyMesh *meshes = new MyMesh[_n_meshes];
@@ -27,10 +28,11 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix) : PCA()
 	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
 		string index;
 		stringstream convert;
-		convert << iMesh;
+		convert << first_index + iMesh;
 		index = convert.str();
 		cout << "Reading mesh #" + index << endl;
-		if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix + index + ".ply"))
+		if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix 
+			+ index + _ply_models_url_suffix))
 		{
 			std::cerr << "Cannot read mesh #" + index << std::endl;
 		}
@@ -187,14 +189,14 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes)
 //=============================================================================
 void PCA::updateMesh(MyMesh& _mesh)
 {
-	VectorXf new_model = first_model;
+	VectorXf new_model = mean_model;
 
-	alphas = M_feature2Alpha * features;
+	//alphas = M_feature2Alpha * features;
 
-	for (int i = 0; i < degrees_freedom; i++)
-	{
-		new_model += alphas(i) * eigen_vectors.col(i);
-	}
+	//for (int i = 0; i < degrees_freedom; i++)
+	//{
+	//	new_model += alphas(i) * eigen_vectors.col(i);
+	//}
 
 	MyMesh::ConstVertexIter vIt1(_mesh.vertices_begin());
 	MyMesh::ConstVertexIter vIt2(_mesh.vertices_end());

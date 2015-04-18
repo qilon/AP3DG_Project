@@ -44,7 +44,8 @@ class PCA
 {
 public:
 	PCA();
-	PCA(int _n_meshes, string _ply_models_url_preffix);
+	PCA(int _n_meshes, string _ply_models_url_preffix, 
+		string _ply_models_url_suffix, int first_index);
 	PCA(string _pca_filename_url, string _features_filename_url);
 	PCA(string _pca_filename_url);
 	virtual ~PCA();

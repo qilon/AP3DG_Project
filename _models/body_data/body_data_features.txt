@@ -1,0 +1,22 @@
+20
+114
+ID
+Gender
+own height [cm]
+Age [a]
+Weight [kg]
+Adipose [%]
+Water [%]
+Muscles [%]
+Bones [kg]
+Puls [bpm]
+SpO2 [%]
+Breast girth [mm]
+Waist girth [mm]
+Hips girth [mm]
+Thigh girth [mm]
+Calf girth [mm]
+Body height [mm]
+Shoulder height [mm]
+Leg length [mm]
+Body volume [l]
