@@ -51,6 +51,7 @@ public:
 	virtual ~PCA();
 	void readPCA(string _pca_filename_url);
 	void readFeatures(string _features_filename_url);
+	void computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix, string _ply_models_url_suffix, int first_index);
 	void writePCA(string _pca_filename_url);
 	void computeFeatures(int _n_meshes, string _ply_models_url_preffix);
 	void writeFeatures(string _feature_filename_url);
@@ -58,12 +59,12 @@ public:
 	void editFeature(int idxFeature, float new_value);
 	float getFeature(int idxFeature);
 	FeatureConfig* getInitialFeatures();
-	int getControllers();
+	int getFeatures();
 
 private:
 	int degrees_freedom;
 	int vector_size;
-	int n_controllers;
+	int n_features;
 	MatrixXf eigen_vectors;
 	VectorXf eigen_values;
 	VectorXf mean_model;
@@ -73,6 +74,7 @@ private:
 	MatrixXf M_feature2Alpha;
 	FeatureConfig* initialFeatures;
 
+	MatrixXf readFeaturesData(string _features_data_filename_url);
 	void initAlphas();
 	void initFeatures();
 	void computePCA(MyMesh* meshes, int _n_meshes);

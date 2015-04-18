@@ -6,7 +6,8 @@ const static string MODELS_URL_PREFFIX = "_models/body_data/s";
 const static string MODELS_URL_SUFFIX = "p0.obj";
 const static int MODELS_URL_FIRST_IDX = 1;
 const static string PCA_MODEL_URL = "./_data/body_pca_model.dat";
-const static string FEATURES_URL = "./_data/features.dat";
+const static string FEATURES_URL = "./_data/body_features.dat";
+const static string BODY_FEATURES_URL = "./_data/body_data_features.txt";
 
 // VIEWER TEST PARAMETERS
 const static char* MESH_FILENAME = "./_models/body_data/s1p0.obj";
@@ -27,6 +28,11 @@ int main(int argc, char **argv)
 	// pca.writeFeatures(FEATURES_URL);
 
 	//PCA pca = PCA(PCA_MODEL_URL, FEATURES_URL);
+
+	// Body Data:
+	// PCA pca = pca(PCA_MODEL_URL);
+	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX);
+	// pca.writeFeatures(FEATURES_URL);
 
 	// Mesh viewer
 	GLViewer viewer;

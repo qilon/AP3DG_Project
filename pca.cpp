@@ -4,7 +4,7 @@ PCA::PCA()
 {
 	degrees_freedom = 0;
 	vector_size = 0;
-	n_controllers = 0;
+	n_features = 0;
 	initialFeatures = nullptr;
 }
 //=============================================================================
@@ -90,21 +90,76 @@ void PCA::readFeatures(string _features_filename_url)
 	// Load features
 	ifstream inFeatures(_features_filename_url, ios::in | std::ios::binary);
 	
-	inFeatures.read((char*)(&n_controllers), sizeof(int));
+	inFeatures.read((char*)(&n_features), sizeof(int));
 	
-	cout << "Number of controllers: " << n_controllers << endl;
-	M_feature2Alpha.resize(degrees_freedom, n_controllers + 1);
-	initialFeatures = new FeatureConfig[n_controllers];
+	cout << "Number of features: " << n_features << endl;
+	M_feature2Alpha.resize(degrees_freedom, n_features + 1);
+	initialFeatures = new FeatureConfig[n_features];
 
 	inFeatures.read((char *)M_feature2Alpha.data(),
-		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+		degrees_freedom*(n_features + 1)*sizeof(MatrixXf::Scalar));
 	inFeatures.read((char *)initialFeatures,
-		n_controllers*sizeof(FeatureConfig));
+		n_features*sizeof(FeatureConfig));
 	inFeatures.close();
 
 	initAlphas();
 	initFeatures();
 	centerModel();
+}
+//=============================================================================
+MatrixXf PCA::readFeaturesData(string _features_data_filename_url)
+{
+	// Load features data (e.g. from the body_data metadata)
+	ifstream inFeatures(_features_data_filename_url);
+
+	// inFeatures.read((char*)(&n_features), sizeof(int));
+	inFeatures >> n_features;
+	cout << "Number of features: " << n_features << endl;
+
+	int n_meshes;
+	inFeatures >> n_meshes;
+	cout << "Number of meshes: " << n_meshes << endl;
+
+	// Read feature labels
+	initialFeatures = new FeatureConfig[n_features];
+	string line;
+	getline(inFeatures, line);
+	for (int iFeature = 0; iFeature < n_features; iFeature++) {
+		getline(inFeatures, line);
+		strcpy(initialFeatures[iFeature].name, line.c_str());
+	}
+
+	// Min values
+	for (int iFeature = 0; iFeature < n_features; iFeature++) {
+		inFeatures >> initialFeatures[iFeature].min_value;
+	}
+
+	// Max values
+	for (int iFeature = 0; iFeature < n_features; iFeature++) {
+		inFeatures >> initialFeatures[iFeature].max_value;
+	}
+
+	// Read feature values
+	getline(inFeatures, line);
+	MatrixXf featuresMeshes(MatrixXf::Ones(n_features + 1, n_meshes));
+	for (int iMesh = 0; iMesh < n_meshes; iMesh++) {
+		getline(inFeatures, line);
+		// cout << line << endl;
+		stringstream iss(line);
+		float x;
+		int iFeature = 0;
+		while (iss >> x) {
+			featuresMeshes(iFeature, iMesh) = x;
+			iFeature++;
+		}
+	}
+
+	// Initial value
+	for (int iFeature = 0; iFeature < n_features; iFeature++) {
+		initialFeatures[iFeature].init_value = featuresMeshes(iFeature, 0);
+	}
+
+	return featuresMeshes;
 }
 //=============================================================================
 void PCA::writePCA(string _pca_filename_url)
@@ -191,12 +246,12 @@ void PCA::updateMesh(MyMesh& _mesh)
 {
 	VectorXf new_model = mean_model;
 
-	//alphas = M_feature2Alpha * features;
+	alphas = M_feature2Alpha * features;
 
-	//for (int i = 0; i < degrees_freedom; i++)
-	//{
-	//	new_model += alphas(i) * eigen_vectors.col(i);
-	//}
+	for (int i = 0; i < degrees_freedom; i++)
+	{
+		new_model += alphas(i) * eigen_vectors.col(i);
+	}
 
 	MyMesh::ConstVertexIter vIt1(_mesh.vertices_begin());
 	MyMesh::ConstVertexIter vIt2(_mesh.vertices_end());
@@ -218,11 +273,11 @@ void PCA::initAlphas()
 //=============================================================================
 void PCA::initFeatures()
 {
-	features.resize(n_controllers + 1);
-	for (int iFeature = 0; iFeature < n_controllers; iFeature++) {
+	features.resize(n_features + 1);
+	for (int iFeature = 0; iFeature < n_features; iFeature++) {
 		features(iFeature) = initialFeatures[iFeature].init_value;
 	}
-	features(n_controllers) = 1;
+	features(n_features) = 1;
 }
 //=============================================================================
 void PCA::editFeature(int idxFeature, float new_value)
@@ -240,14 +295,14 @@ FeatureConfig* PCA::getInitialFeatures()
 	return initialFeatures;
 }
 //=============================================================================
-int PCA::getControllers()
+int PCA::getFeatures()
 {
-	return n_controllers;
+	return n_features;
 }
 //=============================================================================
 void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 
-	n_controllers = 8;
+	n_features = 8;
 
 	// Reading meshes:
 	MyMesh *meshes = new MyMesh[_n_meshes];
@@ -265,7 +320,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 	}
 
 	int nVert = mean_model.size() / 3;
-	MatrixXf featuresMeshes(MatrixXf::Ones(n_controllers + 1, _n_meshes));
+	MatrixXf featuresMeshes(MatrixXf::Ones(n_features + 1, _n_meshes));
 	MatrixXf centS(3 * nVert, _n_meshes);
 	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
 		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
@@ -337,8 +392,8 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 	MatrixXf U = svd.matrixU();
 	MatrixXf V = svd.matrixV();
 	VectorXf singularValues = svd.singularValues();
-	MatrixXf M_SigmaInv(MatrixXf::Zero(_n_meshes, n_controllers + 1));
-	for (int i = 0; i < min(n_controllers + 1, _n_meshes); i++) {
+	MatrixXf M_SigmaInv(MatrixXf::Zero(_n_meshes, n_features + 1));
+	for (int i = 0; i < min(n_features + 1, _n_meshes); i++) {
 		if (abs(singularValues(i)) > 1e-06) {
 			M_SigmaInv(i, i) = 1 / singularValues(i);
 		}
@@ -348,7 +403,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 	M_feature2Alpha = alphasMeshes * featuresInv;
 
 	// Calculate initial features
-	initialFeatures = new FeatureConfig[n_controllers];
+	initialFeatures = new FeatureConfig[n_features];
 	initialFeatures[0] = FeatureConfig("Right arm", featuresMeshes(0, 0), -5, 5, 0.1);
 	initialFeatures[1] = FeatureConfig("Left arm", featuresMeshes(1, 0), -5, 5, 0.1);
 	initialFeatures[2] = FeatureConfig("Right elbow", featuresMeshes(2, 0), -5, 5, 0.1);
@@ -359,15 +414,64 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix) {
 	initialFeatures[7] = FeatureConfig("Left knee", featuresMeshes(7, 0), -5, 5, 0.1);
 }
 //=============================================================================
+void PCA::computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix, string _ply_models_url_suffix, int first_index) {
+	MatrixXf featuresMeshes = readFeaturesData(_features_data_filename_url);
+
+	int n_meshes = featuresMeshes.cols();
+	MyMesh *meshes = new MyMesh[n_meshes];
+	for (int iMesh = 0; iMesh < n_meshes; iMesh++){
+		string index;
+		stringstream convert;
+		convert << first_index + iMesh;
+		index = convert.str();
+		cout << "Reading mesh #" + index << endl;
+		if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix + index + _ply_models_url_suffix))
+		{
+			std::cerr << "Cannot read mesh #" + index << std::endl;
+		}
+	}
+
+	int nVert = mean_model.size() / 3;
+	MatrixXf centS(3 * nVert, n_meshes);
+
+	for (int iMesh = 0; iMesh < n_meshes; iMesh++) {
+		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
+		for (int iVert = 0; iVert < nVert; iVert++) {
+			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);
+			centS(3 * iVert + 1, iMesh) = model(1, iVert) - mean_model(3 * iVert + 1);
+			centS(3 * iVert + 2, iMesh) = model(2, iVert) - mean_model(3 * iVert + 2);
+		}
+	}
+
+	// Calculate alphas of the mesh
+	MatrixXf alphasMeshes = eigen_vectors.transpose() * centS;
+
+	// Calculate matrix M
+	JacobiSVD<MatrixXf> svd(featuresMeshes, ComputeFullU | ComputeFullV);
+	MatrixXf U = svd.matrixU();
+	MatrixXf V = svd.matrixV();
+	VectorXf singularValues = svd.singularValues();
+	MatrixXf M_SigmaInv(MatrixXf::Zero(n_meshes, n_features + 1));
+	for (int i = 0; i < min(n_features + 1, n_meshes); i++) {
+		if (abs(singularValues(i)) > 1e-06) {
+			M_SigmaInv(i, i) = 1 / singularValues(i);
+		}
+	}
+
+	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
+	M_feature2Alpha = alphasMeshes * featuresInv;
+
+}
+
 void PCA::writeFeatures(string _feature_filename_url)
 {
 	ofstream out(_feature_filename_url, ios::out | std::ios::binary | ios::trunc);
 
-	out.write((char*)(&n_controllers), sizeof(int));
+	out.write((char*)(&n_features), sizeof(int));
 	out.write((char*)M_feature2Alpha.data(),
-		degrees_freedom*(n_controllers + 1)*sizeof(MatrixXf::Scalar));
+		degrees_freedom*(n_features + 1)*sizeof(MatrixXf::Scalar));
 	out.write((char*)initialFeatures,
-		n_controllers*sizeof(FeatureConfig));
+		n_features*sizeof(FeatureConfig));
 	out.close();
 }
 //=============================================================================
