@@ -1,3 +1,6 @@
+%% Load metadata
+load('meta_data.mat');
+
 %% Compute the mean values per id. 
 % They are all the same so in fact is just to get a unique value.
 id = unique(semdata(:,1));
@@ -85,8 +88,8 @@ for i=1:n_good_features
 end
 
 %% MINIMUM AND MAXIMUM VALUES BY HAND!!!
-min_values = zeros(n_good_features);
-max_values = 10.^ceil(log10(ceil(max(data))));
+min_values = min(data);%zeros(n_good_features);
+max_values = max(data);%10.^ceil(log10(ceil(max(data))));
 
 %% Write results in file
 FILE_NAME = 'body_data_features.txt';
