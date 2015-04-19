@@ -484,6 +484,7 @@ void PCA::updateMesh(MyMesh& _mesh)
 		_mesh.point(*vIt1)[1] = y;
 		_mesh.point(*vIt1)[2] = z;
 	}
+	_mesh.update_normals();
 }
 //=============================================================================
 // Center the mean and first model in order for them to be at the center of the window in the viewer

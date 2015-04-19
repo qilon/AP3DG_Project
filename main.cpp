@@ -21,9 +21,9 @@ int main(int argc, char **argv)
 
 	// Compute features mapping
 	// Load PCA info only:
-	// PCA pca = PCA(PCA_MODEL_URL);
+	PCA pca = PCA(PCA_MODEL_URL);
 	// Body Data:
-	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
+	pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
 	// Scapecomp:
 	// pca.computeFeatures(NUM_MESHES, MODELS_URL_PREFFIX, FEATURES_URL);
 
