@@ -2,6 +2,7 @@
 #if defined(__APPLE__) || defined(MACOSX)
 #include <GL/glew.h>
 #include <GLUT/glut.h>
+#include <GL/glui.h>
 #else
 #include <GL/glew.h>
 #include <GL/glut.h>
@@ -10,6 +11,7 @@
 
 #include "pca.h"
 //=============================================================================
+/**** KEYBOARD KEYS ****/
 #define UPPER_A 65
 #define LOWER_A 97
 #define UPPER_C 67
@@ -47,53 +49,60 @@ using namespace Eigen;
 class GLViewer
 {
 private:
+	/**** CONSTANTS ****/
+
+	/* WINDOW PARAMETERS */
 	const static char* WINDOW_TITLE;
 	const static int WINDOW_WIDTH;
 	const static int WINDOW_HEIGHT;
 
+	/* PERSPECTIVE PROPERTIES */
 	const static GLfloat FRUSTUM_COEFF;
 	const static GLfloat DEPTH_NEAR;
 	const static GLfloat DEPTH_FAR;
+	const static GLfloat EYE_DISTANCE; /* initial eye z-position  */
+	const static GLfloat ZOOM_INCR;	/* zoom increment on */
 
-	const static GLfloat ZOOM_INCR;
-	
-	const static GLfloat EYE_DISTANCE;
+	/* VIEWER COLOURS */
+	const static GLfloat LIGHT_AMBIENT[4];
+	const static GLfloat LIGHT_POSITION[4];
+	const static GLfloat BACKGROUND_COLOUR[4];
+	const static GLfloat MODEL_COLOR[3];
 
+	/* GUIDANCE CIRCLES PARAMETERS */
 	const static GLfloat RADIUS_OFFSET;
 	const static GLint CIRCLE_NUM_LINES;
-	const static Vector3f CIRCLE_XY_COLOR;
-	const static Vector3f CIRCLE_XZ_COLOR;
-	const static Vector3f CIRCLE_YZ_COLOR;
+	const static GLfloat CIRCLE_XY_COLOR[3];
+	const static GLfloat CIRCLE_XZ_COLOR[3];
+	const static GLfloat CIRCLE_YZ_COLOR[3];
 
-	const static GLfloat LIGHT_AMBIENT[4];  /* Grey ambient light. */
-	const static GLfloat LIGHT_POSITION[4];  /* Infinite light location. */
-	const static GLfloat BACKGROUND_COLOUR[4];  /* Background colour. */
-	const static Vector3f GLViewer::MODEL_COLOR;
+	//=========================================================================
 
-	static int moving, beginx, beginy;
-	static Vector3f eye;
-	static Vector3f center;
-	static Vector3f up;
-	static GLfloat aspectRatio;
-	static GLfloat depthNear, depthFar;
+	/**** VARIABLES ****/
 
-	static GLfloat anglex;   /* in degrees */
-	static GLfloat angley;   /* in degrees */
+	/* MAIN VARIABLES */
+	static MyMesh mesh; /* 3d mesh */
+	static PCA pca; /* PCA model */
+	static float* features; /* feature values */
 
-	static MyMesh mesh;
+	/* VIEW VARIABLES */
+	static GLfloat eye[3]; /* eye position*/
+	static GLfloat aspectRatio; /* view aspect ratio*/
 
-	static GLfloat radius;
-	static int showCircles;
-
-	static int idxFeature;
-
-	static PCA pca;
-
-	static float* features;
-
+	/* ROTATION AND TRANSLATION MATRIXES*/
 	static float translation[];
 	static float rotation[];
 
+	/* MOUSE CONTROL VARIABLES */
+	static int moving;
+	static int beginx, beginy;
+	static float translationRatio;
+
+	/* GUIDANCE CIRCLES VARIABLES */
+	static GLfloat radius; /* radius of circles */
+	static int showCircles; /* show or hide circles */
+
+	/* GLUI COMPONENTS */
 	static int window_id;
 	static GLUI* glui;
 	static GLUI_Translation* glui_trans;
@@ -102,32 +111,36 @@ private:
 
 	//=========================================================================
 
+	/**** PRIVATE FUNCTIONS ****/
+
+	/* INITIALIZATION METHODS */
 	static void initGLUT(int *argc, char **argv);
 	static void initGLUI(void);
-
 	static void initGLUIComponents(void);
 	static void initGLUIFeatures(FeatureConfig* _features, int _nFeatures);
 
+	/* GLUT AND GLUI FUNCTIONS */
 	static void display(void);
 	static void reshape(int x, int y);
 	static void mouse(int button, int state, int x, int y);
 	static void motion(int x, int y);
 	static void key(unsigned char key, int x, int y);
-	static void zoom(GLfloat distance);
-
-	static void drawCircle(GLfloat radius, Vector3f center, GLint plane,
-		GLint numLines, Vector3f color);
-	static void calculateRadius();
 	static void idle(void);
-	static void updateFeatures(int _idxFeature);
 
+	/* DRAWING FUNCTIONS */
+	static void drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
+		const GLfloat* _color);
 	static void drawModel(void);
-	static void drawText(const char *text, int length, int x, int y);
+
+	/* OTHER FUNCTIONS */
+	static void zoom(GLfloat distance); /* increase or decrease eye depth */
+	static void calculateRadius(); /* updates circles radius based on mesh size */
+	static void updateFeature(int _idxFeature); /* update feature in pca and in mesh */
 
 public:
 	static void initialize(int *argcp, char **argv);
 	static void setMesh(MyMesh& _mesh);
+	static void loadPCA(string _pca_filename, string _features_filename);
 	static void run();
-	static void loadPCA(string _pca_filename_url, string _features_filename_url);
 };
 //=============================================================================
