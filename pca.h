@@ -45,21 +45,20 @@ class PCA
 public:
 	PCA();
 	PCA(int _n_meshes, string _ply_models_url_preffix, 
-		string _ply_models_url_suffix, int first_index);
+		string _ply_models_url_suffix, int first_index, string _pca_filename_url);
 	PCA(string _pca_filename_url, string _features_filename_url);
 	PCA(string _pca_filename_url);
 	virtual ~PCA();
 	void readPCA(string _pca_filename_url);
+	void computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix,
+		string _ply_models_url_suffix, int first_index, string _feature_filename_url);
+	void computeFeatures(int _n_meshes, string _ply_models_url_preffix, string _feature_filename_url);
 	void readFeatures(string _features_filename_url);
-	void computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix, string _ply_models_url_suffix, int first_index);
-	void writePCA(string _pca_filename_url);
-	void computeFeatures(int _n_meshes, string _ply_models_url_preffix);
-	void writeFeatures(string _feature_filename_url);
 	void updateMesh(MyMesh& _mesh);
 	void editFeature(int idxFeature, float new_value);
 	float getFeature(int idxFeature);
 	FeatureConfig* getInitialFeatures();
-	int getFeatures();
+	int getNFeatures();
 
 private:
 	int degrees_freedom;
@@ -74,10 +73,12 @@ private:
 	MatrixXf M_feature2Alpha;
 	FeatureConfig* initialFeatures;
 
+	void computePCA(MyMesh* meshes, int _n_meshes, string _pca_filename_url);
+	void writePCA(string _pca_filename_url);
 	MatrixXf readFeaturesData(string _features_data_filename_url);
+	void writeFeatures(string _feature_filename_url); // , const Ref<const VectorXf>& centS, const Ref<const MatrixXf>& featuresMeshes);
+	void centerModel();
 	void initAlphas();
 	void initFeatures();
-	void computePCA(MyMesh* meshes, int _n_meshes);
-	void centerModel();
 };
 //=============================================================================

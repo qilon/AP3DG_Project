@@ -309,12 +309,12 @@ void GLViewer::key(unsigned char key, int x, int y) {
 			idxFeature--;
 		break;
 	case UPPER_O:
-		if (idxFeature < pca.getFeatures() - 1) {
+		if (idxFeature < pca.getNFeatures() - 1) {
 			idxFeature++;
 		}
 		break;
 	case LOWER_O:
-		if (idxFeature < pca.getFeatures() - 1) {
+		if (idxFeature < pca.getNFeatures() - 1) {
 			idxFeature++;
 		}
 		break;
@@ -471,7 +471,7 @@ void GLViewer::idle(void)
 void GLViewer::initGLUIComponents(void)
 {
 	/* Load features from PCA */
-	int n_features = pca.getFeatures();
+	int n_features = pca.getNFeatures();
 	initGLUIFeatures(pca.getInitialFeatures(), n_features);
 
 	/* Control Panel */
