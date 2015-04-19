@@ -4,7 +4,7 @@ using namespace std;
 //=============================================================================
 struct FeatureConfig
 {
-	char name[20];
+	char name[30];
 	float init_value, min_value, max_value, incr_value;
 
 	FeatureConfig()
