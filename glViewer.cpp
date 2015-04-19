@@ -127,7 +127,7 @@ void GLViewer::initGLUI(void)
 void GLViewer::initGLUIComponents(void)
 {
 	/* Load features from PCA */
-	int n_features = pca.getFeatures();
+	int n_features = pca.getNFeatures();
 	initGLUIFeatures(pca.getInitialFeatures(), n_features);
 
 	/* Control Panel */

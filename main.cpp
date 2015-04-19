@@ -18,12 +18,14 @@ int main(int argc, char **argv)
 	// Compute PCA model 
 	//PCA pca = PCA(NUM_MESHES, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, 
 	//	MODELS_URL_FIRST_IDX);
-	//pca.writePCA(PCA_MODEL_URL);
 
 	// Compute features mapping
-	//PCA pca = PCA(PCA_MODEL_URL);
-	//pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX);
-	//pca.writeFeatures(FEATURES_URL);
+	// Load PCA info only:
+	// PCA pca = PCA(PCA_MODEL_URL);
+	// Body Data:
+	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
+	// Scapecomp:
+	// pca.computeFeatures(NUM_MESHES, MODELS_URL_PREFFIX, FEATURES_URL);
 
 	// Run mesh viewer
 	GLViewer viewer;

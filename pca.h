@@ -76,7 +76,7 @@ private:
 	void computePCA(MyMesh* meshes, int _n_meshes, string _pca_filename_url);
 	void writePCA(string _pca_filename_url);
 	MatrixXf readFeaturesData(string _features_data_filename_url);
-	void writeFeatures(string _feature_filename_url); // , const Ref<const VectorXf>& centS, const Ref<const MatrixXf>& featuresMeshes);
+	void writeFeatures(string _feature_filename_url);
 	void centerModel();
 	void initAlphas();
 	void initFeatures();
