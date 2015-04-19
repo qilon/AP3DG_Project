@@ -1,6 +1,6 @@
 #include "MyMesh.h"
 //=============================================================================
-int loadMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors)
+int readMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors)
 {
 	OpenMesh::IO::Options ropt, wopt;
 

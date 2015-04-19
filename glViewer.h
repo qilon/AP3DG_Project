@@ -76,6 +76,11 @@ private:
 	const static GLfloat CIRCLE_XZ_COLOR[3];
 	const static GLfloat CIRCLE_YZ_COLOR[3];
 
+	/* GLUI CONTROL PARAMETERS */
+	const static float TRANSLATION_SPEED;
+	const static float ZOOM_SPEED;
+	const static float ROTATION_SPIN_FACTOR;
+
 	//=========================================================================
 
 	/**** VARIABLES ****/
@@ -139,7 +144,7 @@ private:
 
 public:
 	static void initialize(int *argcp, char **argv);
-	static void setMesh(MyMesh& _mesh);
+	static void loadMesh(string _mesh_filename);
 	static void loadPCA(string _pca_filename, string _features_filename);
 	static void run();
 };

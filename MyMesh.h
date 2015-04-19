@@ -41,7 +41,7 @@ struct Traits
 //=============================================================================
 typedef OpenMesh::PolyMesh_ArrayKernelT<Traits> MyMesh;
 //=============================================================================
-int loadMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors = false);
+int readMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors = false);
 //=============================================================================
 Eigen::MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
 //=============================================================================
