@@ -15,37 +15,21 @@ const static char* MESH_FILENAME = "./_models/body_data_no_zeros/s1p0.obj";
 //=============================================================================
 int main(int argc, char **argv)
 {
-	// Generate the eigen vectors and eigen values of the covariance matrix for 
-	// the 71 meshes and keeps the 70 highest ones
+	// Compute PCA model 
 	//PCA pca = PCA(NUM_MESHES, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, 
 	//	MODELS_URL_FIRST_IDX);
 	//pca.writePCA(PCA_MODEL_URL);
-	//pca.writeFeatures(NUM_MESHES, PLY_MODELS_URL_PREFFIX, FEATURES_URL);
 
-	// PCA pca = PCA(PCA_MODEL_URL);
-	// pca.computeFeatures(NUM_MESHES, PLY_MODELS_URL_PREFFIX);
-	// pca.writeFeatures(FEATURES_URL);
-
-	//PCA pca = PCA(PCA_MODEL_URL, FEATURES_URL);
-
-	// Body Data:
+	// Compute features mapping
 	//PCA pca = PCA(PCA_MODEL_URL);
 	//pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX);
 	//pca.writeFeatures(FEATURES_URL);
 
-	// Mesh viewer
+	// Run mesh viewer
 	GLViewer viewer;
 	viewer.initialize(&argc, argv);
-
-	// Reads a mesh to get the vertices connections
-	MyMesh mesh;
-	loadMesh(mesh, MESH_FILENAME);
-	viewer.setMesh(mesh);
-
-	// Loads PCA info
-	viewer.loadPCA(PCA_MODEL_URL, FEATURES_URL);
-
-	// Loop viewer
+	viewer.loadMesh(MESH_FILENAME);	// Reads a mesh to get the vertices connections
+	viewer.loadPCA(PCA_MODEL_URL, FEATURES_URL); // Loads PCA info
 	viewer.run();
 
 	return 0;

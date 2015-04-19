@@ -26,6 +26,11 @@ const GLint GLViewer::CIRCLE_NUM_LINES = 100;
 const GLfloat GLViewer::CIRCLE_XY_COLOR[3] = { 1.f, 0.f, 0.f };
 const GLfloat GLViewer::CIRCLE_XZ_COLOR[3] = { 0.f, 1.f, 0.f };
 const GLfloat GLViewer::CIRCLE_YZ_COLOR[3] = { 0.f, 0.f, 1.f };
+
+/* GLUI CONTROL PARAMETERS */
+const float GLViewer::TRANSLATION_SPEED = .005f;
+const float GLViewer::ZOOM_SPEED = .005f;
+const float GLViewer::ROTATION_SPIN_FACTOR = .98f;
 //=============================================================================
 /**** VARIABLES ****/
 
@@ -110,6 +115,15 @@ void GLViewer::initGLUI(void)
 	GLUI_Master.set_glutIdleFunc(idle);
 }
 //=============================================================================
+/*
+ * Function that initialize the GLUI components
+ * Adds the following elements:
+ * - list of feature spinners from the info in pca
+ * - translation tool
+ * - zoom tool
+ * - rotation tool
+ * - check for showing or hiding guidance circles
+ */
 void GLViewer::initGLUIComponents(void)
 {
 	/* Load features from PCA */
@@ -122,24 +136,31 @@ void GLViewer::initGLUIComponents(void)
 	GLUI_Panel* trans_panel = glui->add_panel_to_panel(control_panel, "Translations",
 		GLUI_PANEL_NONE);
 
+	/* Translation */
 	glui_trans =
 		new GLUI_Translation(trans_panel, "Translate", GLUI_TRANSLATION_XY, translation);
-	glui_trans->set_speed(.005f);
+	glui_trans->set_speed(TRANSLATION_SPEED);
 
 	glui->add_column_to_panel(trans_panel, 0);
 
+	/* Zoom */
 	glui_zoom =
 		new GLUI_Translation(trans_panel, "Zoom", GLUI_TRANSLATION_Z, &translation[2]);
-	glui_zoom->set_speed(.005f);
+	glui_zoom->set_speed(ZOOM_SPEED);
 
+	/* Rotation */
 	GLUI_Rotation *glui_rot = new GLUI_Rotation(control_panel, "Rotate", rotation);
-	glui_rot->set_spin(.98f);
+	glui_rot->set_spin(ROTATION_SPIN_FACTOR);
 
+	/* Circles check */
 	glui_check_circles =
 		new GLUI_Checkbox(control_panel, "Guidance circles", &showCircles);
 	glui_check_circles->set_alignment(GLUI_ALIGN_RIGHT);
 }
 //=============================================================================
+/*
+ * Function that creates a spinner for each of the features defined in pca
+ */
 void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
 	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
@@ -399,14 +420,18 @@ void GLViewer::initialize(int *argc, char **argv)
 	initGLUI();
 }
 //=============================================================================
-void GLViewer::setMesh(MyMesh& _mesh)
+/*
+ * Reads mesh from file and computes the normals if not provided.
+ * This mesh is loaded basicly to have faces
+ */
+void GLViewer::loadMesh(string _mesh_filename)
 {
-	mesh = _mesh;
+	readMesh(mesh, _mesh_filename.c_str());
 
-	// Add vertex normals as default property (ref. previous tutorial)
+	// Add vertex normals
 	mesh.request_vertex_normals();
 
-	// Add face normals as default property
+	// Add face normals
 	mesh.request_face_normals();
 
 	// If the file did not provide vertex normals, then calculate them
@@ -416,11 +441,15 @@ void GLViewer::setMesh(MyMesh& _mesh)
 		mesh.update_normals();
 	}
 
+	// Update guidance circle radius
 	calculateRadius();
 
 	glutPostRedisplay();
 }
 //=============================================================================
+/*
+ * Reads pca model and the corresponding features data from files
+ */
 void GLViewer::loadPCA(string _pca_filename, string _features_filename)
 {
 	pca.readPCA(_pca_filename);
