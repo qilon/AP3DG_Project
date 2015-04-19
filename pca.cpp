@@ -1,5 +1,6 @@
 #include "pca.h"
 //=============================================================================
+// Stardard, "empty" constructor
 PCA::PCA()
 {
 	degrees_freedom = 0;
@@ -8,17 +9,20 @@ PCA::PCA()
 	initialFeatures = nullptr;
 }
 //=============================================================================
+// Constructor that reads both the PCA info and features
 PCA::PCA(string _pca_filename_url, string _features_filename_url) : PCA()
 {
 	readPCA(_pca_filename_url);
 	readFeatures(_features_filename_url);
 }
 //=============================================================================
+// Constructor that reads only the PCA info
 PCA::PCA(string _pca_filename_url) : PCA()
 {
 	readPCA(_pca_filename_url);
 }
 //=============================================================================
+// Constructor that computes and writes PCA info out of the models
 PCA::PCA(int _n_meshes, string _ply_models_url_preffix, 
 	string _ply_models_url_suffix, int first_index, string _pca_filename_url) : PCA()
 {
@@ -49,6 +53,7 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix,
 	meshes = nullptr;
 }
 //=============================================================================
+// Destructor
 PCA::~PCA()
 {
 	if (initialFeatures != nullptr) {
@@ -57,6 +62,7 @@ PCA::~PCA()
 	}
 }
 //=============================================================================
+// Function that computes PCA info. Warning: needs a lot of resources.
 void PCA::computePCA(MyMesh* meshes, int _n_meshes, string _pca_filename_url)
 {
 	int nVert = meshes[0].n_vertices();
@@ -117,6 +123,7 @@ void PCA::computePCA(MyMesh* meshes, int _n_meshes, string _pca_filename_url)
 	writePCA(_pca_filename_url);
 }
 //=============================================================================
+// Function that writes PCA info into a file.
 void PCA::writePCA(string _pca_filename_url)
 {
 	ofstream out(_pca_filename_url, ios::out | ios::binary | ios::trunc);
@@ -139,6 +146,7 @@ void PCA::writePCA(string _pca_filename_url)
 	out.close();
 }
 //=============================================================================
+// Read PCA info from a file.
 void PCA::readPCA(string _pca_filename_url)
 {
 	// Load PCA info
@@ -155,24 +163,28 @@ void PCA::readPCA(string _pca_filename_url)
 	mean_model.resize(vector_size);
 	first_model.resize(vector_size);
 
+	// Read the eigenvectors matrix
 	inPCA.read((char *)eigen_vectors.data(),
 		vector_size*degrees_freedom*sizeof(MatrixXf::Scalar));
+	// Read the eigenvalues matrix
 	inPCA.read((char *)eigen_values.data(),
 		degrees_freedom*sizeof(VectorXf::Scalar));
+	// Read the mean model
 	inPCA.read((char*)mean_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
+	// Read the first model
 	inPCA.read((char*)first_model.data(),
 		vector_size*sizeof(VectorXf::Scalar));
 
 	inPCA.close();
 }
 //=============================================================================
+// Read the table of feature values from the metadata associated with the Body Data set of meshes
 MatrixXf PCA::readFeaturesData(string _features_data_filename_url)
 {
 	// Load features data (e.g. from the body_data metadata)
 	ifstream inFeatures(_features_data_filename_url);
 
-	// inFeatures.read((char*)(&n_features), sizeof(int));
 	inFeatures >> n_features;
 	cout << "Number of features: " << n_features << endl;
 
@@ -204,7 +216,6 @@ MatrixXf PCA::readFeaturesData(string _features_data_filename_url)
 	MatrixXf featuresMeshes(MatrixXf::Ones(n_features + 1, n_meshes));
 	for (int iMesh = 0; iMesh < n_meshes; iMesh++) {
 		getline(inFeatures, line);
-		// cout << line << endl;
 		stringstream iss(line);
 		float x;
 		int iFeature = 0;
@@ -222,11 +233,14 @@ MatrixXf PCA::readFeaturesData(string _features_data_filename_url)
 	return featuresMeshes;
 }
 //=============================================================================
+// Compute the initial features and conversion matrix for the Body Data set of meshes
 void PCA::computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix,
 	string _ply_models_url_suffix, int first_index, string _feature_filename_url) {
 
+	// First: read the features table from a file
 	MatrixXf featuresMeshes = readFeaturesData(_features_data_filename_url);
 
+	// Load the meshes
 	int n_meshes = featuresMeshes.cols();
 	MyMesh *meshes = new MyMesh[n_meshes];
 	for (int iMesh = 0; iMesh < n_meshes; iMesh++){
@@ -241,6 +255,7 @@ void PCA::computeFeatures(string _features_data_filename_url, string _ply_models
 		}
 	}
 
+	// Compute centered vectors with the coordinates of the vertices
 	int nVert = mean_model.size() / 3;
 	MatrixXf centS(3 * nVert, n_meshes);
 	for (int iMesh = 0; iMesh < n_meshes; iMesh++) {
@@ -267,17 +282,19 @@ void PCA::computeFeatures(string _features_data_filename_url, string _ply_models
 		}
 	}
 
+	// Calculate conversion matrix
 	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
 	M_feature2Alpha = alphasMeshes * featuresInv;
 
-	writeFeatures(_feature_filename_url); // , centS, featuresMeshes);
+	writeFeatures(_feature_filename_url);
 }
 //=============================================================================
+// Compute features corresponding to the Scapecomp set of meshes
 void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string _feature_filename_url) {
 
 	n_features = 8;
 
-	// Reading meshes:
+	// Load meshes
 	MyMesh *meshes = new MyMesh[_n_meshes];
 
 	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
@@ -298,16 +315,20 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
 		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
 
+		// Compute the different features from select vertices from the meshes
+		// Right arm
 		Vector3f uRightArm = model.col(RIGHT_INSIDE_ELBOW) - model.col(RIGHT_AXILLA);
 		Vector3f vRightArm = model.col(RIGHT_WAIST) - model.col(RIGHT_AXILLA);
 		float angleRightArm = acos(uRightArm.dot(vRightArm) / (uRightArm.norm() * vRightArm.norm()));
 		featuresMeshes(0, iMesh) = angleRightArm;
 
+		// Left arm
 		Vector3f uLeftArm = model.col(LEFT_INSIDE_ELBOW) - model.col(LEFT_AXILLA);
 		Vector3f vLeftArm = model.col(LEFT_WAIST) - model.col(LEFT_AXILLA);
 		float angleLeftArm = acos(uLeftArm.dot(vLeftArm) / (uLeftArm.norm() * vLeftArm.norm()));
 		featuresMeshes(1, iMesh) = angleLeftArm;
 
+		// Right forearm
 		Vector3f uRightElbow = (model.col(RIGHT_SHOULDER) + model.col(RIGHT_AXILLA)
 			- model.col(RIGHT_INSIDE_ELBOW) - model.col(RIGHT_ELBOW)) / 2;
 		Vector3f vRightElbow = (model.col(RIGHT_INSIDE_ELBOW) + model.col(RIGHT_ELBOW)
@@ -315,6 +336,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleRightElbow = acos(uRightElbow.dot(vRightElbow) / (uRightElbow.norm() * vRightElbow.norm()));
 		featuresMeshes(2, iMesh) = angleRightElbow;
 
+		// Left forearm
 		Vector3f uLeftElbow = (model.col(LEFT_SHOULDER) + model.col(LEFT_AXILLA)
 			- model.col(LEFT_INSIDE_ELBOW) - model.col(LEFT_ELBOW)) / 2;
 		Vector3f vLeftElbow = (model.col(LEFT_INSIDE_ELBOW) + model.col(LEFT_ELBOW)
@@ -322,6 +344,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleLeftElbow = acos(uLeftElbow.dot(vLeftElbow) / (uLeftElbow.norm() * vLeftElbow.norm()));
 		featuresMeshes(3, iMesh) = angleLeftElbow;
 
+		// Right leg
 		Vector3f uRightLeg = (2 * model.col(RIGHT_WAIST) + model.col(LEFT_WAIST)) / 3
 			- (model.col(RIGHT_HIP) + model.col(PERINEUM)) / 2;
 		Vector3f vRightLeg = (model.col(RIGHT_HIP) + model.col(PERINEUM)
@@ -329,6 +352,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleRightLeg = acos(uRightLeg.dot(vRightLeg) / (uRightLeg.norm() * vRightLeg.norm()));
 		featuresMeshes(4, iMesh) = angleRightLeg;
 
+		// Left leg
 		Vector3f uLeftLeg = (model.col(RIGHT_WAIST) + 2 * model.col(LEFT_WAIST)) / 3
 			- (model.col(LEFT_HIP) + model.col(PERINEUM)) / 2;
 		Vector3f vLeftLeg = (model.col(LEFT_HIP) + model.col(PERINEUM)
@@ -336,6 +360,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleLeftLeg = acos(uLeftLeg.dot(vLeftLeg) / (uLeftLeg.norm() * vLeftLeg.norm()));
 		featuresMeshes(5, iMesh) = angleLeftLeg;
 
+		// Right calf
 		Vector3f uRightKnee = (model.col(RIGHT_HIP) + model.col(PERINEUM)
 			- model.col(RIGHT_INSIDE_KNEE) - model.col(RIGHT_KNEE)) / 2;
 		Vector3f vRightKnee = (model.col(RIGHT_INSIDE_KNEE) + model.col(RIGHT_KNEE)
@@ -343,6 +368,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleRightKnee = acos(uRightKnee.dot(vRightKnee) / (uRightKnee.norm() * vRightKnee.norm()));
 		featuresMeshes(6, iMesh) = angleRightKnee;
 
+		// Left calf
 		Vector3f uLeftKnee = (model.col(LEFT_HIP) + model.col(PERINEUM)
 			- model.col(LEFT_INSIDE_KNEE) - model.col(LEFT_KNEE)) / 2;
 		Vector3f vLeftKnee = (model.col(LEFT_INSIDE_KNEE) + model.col(LEFT_KNEE)
@@ -350,6 +376,7 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		float angleLeftKnee = acos(uLeftKnee.dot(vLeftKnee) / (uLeftKnee.norm() * vLeftKnee.norm()));
 		featuresMeshes(7, iMesh) = angleLeftKnee;
 
+		// Compute centered vectors with the coordinates of the vertices
 		for (int iVert = 0; iVert < nVert; iVert++) {
 			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);
 			centS(3 * iVert + 1, iMesh) = model(1, iVert) - mean_model(3 * iVert + 1);
@@ -383,24 +410,30 @@ void PCA::computeFeatures(int _n_meshes, string _ply_models_url_preffix, string 
 		}
 	}
 
+	// Calculate conversion matrix
 	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
 	M_feature2Alpha = alphasMeshes * featuresInv;
 
-	writeFeatures(_feature_filename_url); // , centS, featuresMeshes);
+	writeFeatures(_feature_filename_url);
 }
 //=============================================================================
-void PCA::writeFeatures(string _feature_filename_url) //, const Ref<const VectorXf>& centS, const Ref<const MatrixXf>& featuresMeshes)
+// Write the conversion matrix and the initial features into a file
+void PCA::writeFeatures(string _feature_filename_url)
 {
 	ofstream out(_feature_filename_url, ios::out | std::ios::binary | ios::trunc);
 
+	// Write the number of features
 	out.write((char*)(&n_features), sizeof(int));
+	// Write the conversion matrix
 	out.write((char*)M_feature2Alpha.data(),
 		degrees_freedom*(n_features + 1)*sizeof(MatrixXf::Scalar));
+	// Write the initial features under the form of a struct FeatureConfig
 	out.write((char*)initialFeatures,
 		n_features*sizeof(FeatureConfig));
 	out.close();
 }
 //=============================================================================
+// Read the conversion matrix and initial features into a file
 void PCA::readFeatures(string _features_filename_url)
 {
 	// Load features
@@ -412,17 +445,23 @@ void PCA::readFeatures(string _features_filename_url)
 	M_feature2Alpha.resize(degrees_freedom, n_features + 1);
 	initialFeatures = new FeatureConfig[n_features];
 
+	// Read conversion matrix
 	inFeatures.read((char *)M_feature2Alpha.data(),
 		degrees_freedom*(n_features + 1)*sizeof(MatrixXf::Scalar));
+	// Read initial features
 	inFeatures.read((char *)initialFeatures,
 		n_features*sizeof(FeatureConfig));
 	inFeatures.close();
 
+	// Initialize the alphas to 0
 	initAlphas();
+	// Initialize the features to their initial values
 	initFeatures();
+	// Center the mean and first models
 	centerModel();
 }
 //=============================================================================
+// Update the positions of the vertices in the mesh from the new features
 void PCA::updateMesh(MyMesh& _mesh)
 {
 	VectorXf new_model = mean_model;
@@ -447,6 +486,7 @@ void PCA::updateMesh(MyMesh& _mesh)
 	}
 }
 //=============================================================================
+// Center the mean and first model in order for them to be at the center of the window in the viewer
 void PCA::centerModel()
 {
 	float max_x = numeric_limits<float>::min(),
@@ -481,11 +521,13 @@ void PCA::centerModel()
 	}
 }
 //=============================================================================
+// Give initial values to the alphas, in this case, 0
 void PCA::initAlphas()
 {
 	alphas = VectorXf::Zero(degrees_freedom);
 }
 //=============================================================================
+// Give initial values to the features, from the features file
 void PCA::initFeatures()
 {
 	features.resize(n_features + 1);
@@ -495,21 +537,25 @@ void PCA::initFeatures()
 	features(n_features) = 1;
 }
 //=============================================================================
+// Change the value of one feature
 void PCA::editFeature(int idxFeature, float new_value)
 {
 	features(idxFeature) = new_value;
 }
 //=============================================================================
+// Get the value of one feature
 float PCA::getFeature(int idxFeature)
 {
 	return features(idxFeature);
 }
 //=============================================================================
+// Get the entirety of the initial features
 FeatureConfig* PCA::getInitialFeatures()
 {
 	return initialFeatures;
 }
 //=============================================================================
+// Get the number of features
 int PCA::getNFeatures()
 {
 	return n_features;
