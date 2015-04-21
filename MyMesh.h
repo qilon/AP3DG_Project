@@ -1,9 +1,11 @@
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
 #include <Eigen/Dense>
+#include <random>
 //=============================================================================
 using namespace OpenMesh;
 using namespace Eigen;
+using namespace std;
 //=============================================================================
 struct Traits
 {
@@ -42,8 +44,6 @@ struct Traits
 typedef OpenMesh::PolyMesh_ArrayKernelT<Traits> MyMesh;
 //=============================================================================
 int readMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors = false);
-//=============================================================================
 Eigen::MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
-//=============================================================================
 MyMesh eigenMatrix2Mesh(const MyMesh& original, const MatrixXf& inputMatrix);
-//=============================================================================
+void addNoise(string _models_url_preffix, string _models_url_suffix, int first_index, int _n_meshes, string _models_noise_url);

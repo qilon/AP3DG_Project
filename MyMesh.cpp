@@ -55,4 +55,38 @@ MyMesh eigenMatrix2Mesh(const MyMesh& original, const MatrixXf& inputMatrix) {
 	}
 	return mesh;
 }
-//=============================================================================
+//==============================================================================
+void addNoise(string _models_url_preffix, string _models_url_suffix, int first_index, int _n_meshes, string _models_noise_url)
+{
+	MyMesh mesh;
+	for (int iMesh = 0; iMesh < _n_meshes; iMesh++){
+		// Load mesh
+		string index;
+		stringstream convert;
+		convert << first_index + iMesh;
+		index = convert.str();
+		cout << "Reading mesh #" + index << endl;
+		if (!OpenMesh::IO::read_mesh(mesh, _models_url_preffix + index + _models_url_suffix))
+		{
+			std::cerr << "Cannot read mesh #" + index << std::endl;
+		}
+
+		MatrixXf model = mesh2EigenMatrix(mesh);
+		float mean = 0.0;
+		float sigma = 0.005;
+		default_random_engine generator;
+		normal_distribution<float> gauss(mean, sigma);
+		for (size_t i = 0; i < 3; i++) {
+			for (size_t j = 0; j < model.cols(); j++) {
+				model(i, j) += gauss(generator);
+			}
+		}
+		mesh = eigenMatrix2Mesh(mesh, model);
+
+		cout << "Writing mesh #" + index << endl;
+		if (!OpenMesh::IO::write_mesh(mesh, _models_noise_url + index + _models_url_suffix))
+		{
+			std::cerr << "Cannot write mesh #" + index << std::endl;
+		}
+	}
+}

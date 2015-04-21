@@ -260,6 +260,8 @@ void PCA::computeFeatures(string _features_data_filename_url, string _ply_models
 	MatrixXf centS(3 * nVert, n_meshes);
 	for (int iMesh = 0; iMesh < n_meshes; iMesh++) {
 		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
+		// cout << "min x: " << model.row(0).minCoeff() << endl;
+		// cout << "max x: " << model.row(0).maxCoeff() << endl;
 		for (int iVert = 0; iVert < nVert; iVert++) {
 			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);
 			centS(3 * iVert + 1, iMesh) = model(1, iVert) - mean_model(3 * iVert + 1);
