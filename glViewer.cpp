@@ -38,10 +38,11 @@ const char* GLViewer::RECONSTRUCT_MODE_TEXT = "Go to Reconstruction mode";
 
 /* MESH RECONSTRUCTION */
 const MyMesh::Color GLViewer::SELECTED_INDEX_COLOR(1.f, .3f, .3f, 1.f);
-const MyMesh::Color GLViewer::RECONSTRUCTED_POINT_COLOR(.5f, .9f, .6f, 1.f);
+const MyMesh::Color GLViewer::RECONSTRUCTED_POINT_COLOR(.5f, .6f, .9f, 1.f);
+const MyMesh::Point GLViewer::REMOVED_POINT(0.f, 0.f, 0.f);
 const int GLViewer::REMOVE_VERTEX_INDEX = 0;
-const int GLViewer::REMOVE_N_RINGS = 0;
-const int GLViewer::REMOVE_MAX_RINGS = 10;
+const int GLViewer::REMOVE_N_RINGS = 4;
+const int GLViewer::REMOVE_MAX_RINGS = 20;
 
 //=============================================================================
 /**** VARIABLES ****/
@@ -50,7 +51,7 @@ const int GLViewer::REMOVE_MAX_RINGS = 10;
 PCA GLViewer::pca = PCA();
 MyMesh GLViewer::mesh;
 float* GLViewer::features;
-int GLViewer::mode = GENERATE_MODE;
+int GLViewer::mode = RECONSTRUCT_MODE;
 MyMesh GLViewer::recons_mesh;
 VectorXi GLViewer::points_state;
 int GLViewer::remove_vertex_index = REMOVE_VERTEX_INDEX;
@@ -157,8 +158,6 @@ void GLViewer::initGLUIComponents(void)
 
 	/* Reconstruction Panel */
 	initGLUIReconstruction();
-	recons_rollout->disable();
-	recons_rollout->close();
 
 	/* Control Panel */
 	initGLUIControlPanel();
@@ -169,7 +168,7 @@ void GLViewer::initGLUIComponents(void)
  */
 void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
-	features_rollout = new GLUI_Rollout(glui, "Features", true);
+	features_rollout = new GLUI_Rollout(glui, "Features", false);
 	features = new float[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
 	{
@@ -182,6 +181,17 @@ void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 		spinner->set_float_val(_features[i].init_value);
 		//spinner->set_speed(_features[i].getIncrValue());
 		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+	}
+
+	if (mode == GENERATE_MODE)
+	{
+		features_rollout->open();
+		features_rollout->enable();
+	}
+	else // RECONSTRUCT_MODE
+	{
+		features_rollout->disable();
+		features_rollout->close();
 	}
 }
 //=============================================================================
@@ -212,6 +222,21 @@ void GLViewer::initGLUIReconstruction()
 	/* Reconstruct button */
 	GLUI_Button* glui_reconstructButton = new GLUI_Button(recons_rollout,
 		"Reconstruct model", -1, &reconstructButtonCallback);
+
+	/* Reset colors button */
+	GLUI_Button* glui_resetColorsButton = new GLUI_Button(recons_rollout,
+		"Reset colors", -1, &resetColorsButtonCallback);
+
+	if (mode == GENERATE_MODE)
+	{
+		recons_rollout->disable();
+		recons_rollout->close();
+	}
+	else // RECONSTRUCT_MODE
+	{
+		recons_rollout->open();
+		recons_rollout->enable();
+	}
 }
 //=============================================================================
 void GLViewer::initGLUIControlPanel()
@@ -393,6 +418,11 @@ void GLViewer::removePointsButtonCallback(int state)
 void GLViewer::reconstructButtonCallback(int state)
 {
 	reconstruct();
+}
+//=============================================================================
+void GLViewer::resetColorsButtonCallback(int state)
+{
+	setMeshColor(recons_mesh, MODEL_COLOR);
 }
 //=============================================================================
 void GLViewer::drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
@@ -577,6 +607,7 @@ void GLViewer::removeReconsMeshRegion(int _vertex_idx, int _n_rings)
 	q_vertex_idx.push(_vertex_idx);
 
 	// Mark origin vertex as unknown and change its color
+	recons_mesh.point(recons_mesh.vertex_handle(_vertex_idx)) = REMOVED_POINT;
 	points_state(_vertex_idx) = UNKNOWN_POINT;
 
 	// Set of points already visited
@@ -600,6 +631,7 @@ void GLViewer::removeReconsMeshRegion(int _vertex_idx, int _n_rings)
 				int v_idx = vv_it.handle().idx();
 				if (s_visited_idx.count(v_idx)==0)
 				{
+					recons_mesh.point(*vv_it) = REMOVED_POINT;
 					points_state(v_idx) = UNKNOWN_POINT;
 					s_visited_idx.insert(v_idx);
 					q_vertex_idx.push(v_idx);
@@ -613,7 +645,20 @@ void GLViewer::removeReconsMeshRegion(int _vertex_idx, int _n_rings)
 //=============================================================================
 void GLViewer::reconstruct()
 {
+	/* Reconstruct model */
+	pca.reconstructMesh(recons_mesh, points_state, RECONSTRUCTED_POINT_COLOR);
 
+	/* Set all points to known */
+	points_state = VectorXi::Ones(recons_mesh.n_vertices());
+}
+//=============================================================================
+void GLViewer::setMeshColor(MyMesh& _mesh, const MyMesh::Color& _color)
+{
+	MyMesh::VertexIter v_it, v_end(_mesh.vertices_end());
+	for (v_it = _mesh.vertices_begin(); v_it != v_end; v_it++)
+	{
+		_mesh.set_color(*v_it, _color);
+	}
 }
 //=============================================================================
 void GLViewer::initialize(int *argc, char **argv)

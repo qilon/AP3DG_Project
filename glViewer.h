@@ -97,6 +97,7 @@ private:
 	/* MESH RECONSTRUCTION */
 	const static MyMesh::Color RECONSTRUCTED_POINT_COLOR;
 	const static MyMesh::Color SELECTED_INDEX_COLOR;
+	const static MyMesh::Point REMOVED_POINT;
 	const static int REMOVE_VERTEX_INDEX;
 	const static int REMOVE_N_RINGS;
 	const static int REMOVE_MAX_RINGS;
@@ -164,6 +165,7 @@ private:
 	static void modeButtonCallback(int state);
 	static void removePointsButtonCallback(int state);
 	static void reconstructButtonCallback(int state);
+	static void resetColorsButtonCallback(int state);
 
 	/* DRAWING FUNCTIONS */
 	static void drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
@@ -177,6 +179,7 @@ private:
 	static void updateMode();
 	static void removeReconsMeshRegion(int _vertex_idx, int _n_rings);
 	static void reconstruct();
+	static void setMeshColor(MyMesh& _mesh, const MyMesh::Color& _color);
 
 public:
 	static void initialize(int *argcp, char **argv);

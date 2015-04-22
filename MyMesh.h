@@ -43,7 +43,9 @@ typedef OpenMesh::PolyMesh_ArrayKernelT<Traits> MyMesh;
 //=============================================================================
 int readMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors = false);
 //=============================================================================
-Eigen::MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
+MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
 //=============================================================================
 MyMesh eigenMatrix2Mesh(const MyMesh& original, const MatrixXf& inputMatrix);
+//=============================================================================
+VectorXf mesh2EigenVector(const MyMesh& mesh);
 //=============================================================================
