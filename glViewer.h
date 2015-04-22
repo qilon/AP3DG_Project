@@ -47,6 +47,10 @@
 /* MODES */
 #define GENERATE_MODE		0
 #define RECONSTRUCT_MODE	1
+
+/* TYPES OF POINTS */
+#define UNKNOWN_POINT	0
+#define KNOWN_POINT		1
 //=============================================================================
 using namespace std;
 using namespace Eigen;
@@ -92,6 +96,10 @@ private:
 
 	/* MESH RECONSTRUCTION */
 	const static MyMesh::Color RECONSTRUCTED_POINT_COLOR;
+	const static MyMesh::Color SELECTED_INDEX_COLOR;
+	const static int REMOVE_VERTEX_INDEX;
+	const static int REMOVE_N_RINGS;
+	const static int REMOVE_MAX_RINGS;
 
 	//=========================================================================
 
@@ -103,6 +111,9 @@ private:
 	static float* features; /* feature values */
 	static int mode;
 	static MyMesh recons_mesh;
+	static VectorXi points_state;
+	static int remove_vertex_index;
+	static int remove_n_rings;
 
 	/* VIEW VARIABLES */
 	static GLfloat eye[3]; /* eye position*/
@@ -127,7 +138,8 @@ private:
 	static GLUI_Translation* glui_trans;
 	static GLUI_Translation* glui_zoom;
 	static GLUI_Checkbox* glui_check_circles;
-	static GLUI_Panel* features_panel;
+	static GLUI_Rollout* features_rollout;
+	static GLUI_Rollout* recons_rollout;
 	static GLUI_Button* glui_modeButton;
 
 	//=========================================================================
@@ -139,6 +151,8 @@ private:
 	static void initGLUI(void);
 	static void initGLUIComponents(void);
 	static void initGLUIFeatures(FeatureConfig* _features, int _nFeatures);
+	static void initGLUIReconstruction();
+	static void initGLUIControlPanel();
 
 	/* GLUT AND GLUI FUNCTIONS */
 	static void display(void);
@@ -148,6 +162,8 @@ private:
 	static void key(unsigned char key, int x, int y);
 	static void idle(void);
 	static void modeButtonCallback(int state);
+	static void removePointsButtonCallback(int state);
+	static void reconstructButtonCallback(int state);
 
 	/* DRAWING FUNCTIONS */
 	static void drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
@@ -159,7 +175,8 @@ private:
 	static void calculateRadius(); /* updates circles radius based on mesh size */
 	static void updateFeature(int _idxFeature); /* update feature in pca and in mesh */
 	static void updateMode();
-	static void deleteReconsMeshRegion(int _vertex_idx, int _n_rings);
+	static void removeReconsMeshRegion(int _vertex_idx, int _n_rings);
+	static void reconstruct();
 
 public:
 	static void initialize(int *argcp, char **argv);
