@@ -10,6 +10,7 @@
 #endif
 
 #include "pca.h"
+#include <queue>
 //=============================================================================
 /**** KEYBOARD KEYS ****/
 #define UPPER_A 65
@@ -42,6 +43,10 @@
 #define LOWER_T 116
 #define UPPER_W 87
 #define LOWER_W 119
+
+/* MODES */
+#define GENERATE_MODE		0
+#define RECONSTRUCT_MODE	1
 //=============================================================================
 using namespace std;
 using namespace Eigen;
@@ -67,7 +72,7 @@ private:
 	const static GLfloat LIGHT_AMBIENT[4];
 	const static GLfloat LIGHT_POSITION[4];
 	const static GLfloat BACKGROUND_COLOUR[4];
-	const static GLfloat MODEL_COLOR[3];
+	const static MyMesh::Color MODEL_COLOR;
 
 	/* GUIDANCE CIRCLES PARAMETERS */
 	const static GLfloat RADIUS_OFFSET;
@@ -81,6 +86,13 @@ private:
 	const static float ZOOM_SPEED;
 	const static float ROTATION_SPIN_FACTOR;
 
+	/* MODE BUTTON TEXT */
+	const static char* GENERATE_MODE_TEXT;
+	const static char* RECONSTRUCT_MODE_TEXT;
+
+	/* MESH RECONSTRUCTION */
+	const static MyMesh::Color RECONSTRUCTED_POINT_COLOR;
+
 	//=========================================================================
 
 	/**** VARIABLES ****/
@@ -89,6 +101,8 @@ private:
 	static MyMesh mesh; /* 3d mesh */
 	static PCA pca; /* PCA model */
 	static float* features; /* feature values */
+	static int mode;
+	static MyMesh recons_mesh;
 
 	/* VIEW VARIABLES */
 	static GLfloat eye[3]; /* eye position*/
@@ -113,6 +127,8 @@ private:
 	static GLUI_Translation* glui_trans;
 	static GLUI_Translation* glui_zoom;
 	static GLUI_Checkbox* glui_check_circles;
+	static GLUI_Panel* features_panel;
+	static GLUI_Button* glui_modeButton;
 
 	//=========================================================================
 
@@ -131,6 +147,7 @@ private:
 	static void motion(int x, int y);
 	static void key(unsigned char key, int x, int y);
 	static void idle(void);
+	static void modeButtonCallback(int state);
 
 	/* DRAWING FUNCTIONS */
 	static void drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
@@ -141,6 +158,8 @@ private:
 	static void zoom(GLfloat distance); /* increase or decrease eye depth */
 	static void calculateRadius(); /* updates circles radius based on mesh size */
 	static void updateFeature(int _idxFeature); /* update feature in pca and in mesh */
+	static void updateMode();
+	static void deleteReconsMeshRegion(int _vertex_idx, int _n_rings);
 
 public:
 	static void initialize(int *argcp, char **argv);

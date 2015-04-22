@@ -18,7 +18,8 @@ const GLfloat GLViewer::ZOOM_INCR = 0.2f;
 const GLfloat GLViewer::LIGHT_AMBIENT[4] = { 0.1f, 0.1f, 0.1f, 1.f };
 const GLfloat GLViewer::LIGHT_POSITION[4] = { .5f, .5f, 1.f, 0.f };
 const GLfloat GLViewer::BACKGROUND_COLOUR[4] = { 0.9f, 0.9f, 0.9f, 1.f };
-const GLfloat GLViewer::MODEL_COLOR[3] = { .9f, .79f, .69f };
+const MyMesh::Color GLViewer::MODEL_COLOR(.9 * 255, .79 * 255, .69 * 255);
+//const MyMesh::Color GLViewer::MODEL_COLOR(230, 201, 176);
 
 /* GUIDANCE CIRCLES PARAMETERS */
 const GLfloat GLViewer::RADIUS_OFFSET = .1f;
@@ -31,6 +32,14 @@ const GLfloat GLViewer::CIRCLE_YZ_COLOR[3] = { 0.f, 0.f, 1.f };
 const float GLViewer::TRANSLATION_SPEED = .005f;
 const float GLViewer::ZOOM_SPEED = .005f;
 const float GLViewer::ROTATION_SPIN_FACTOR = .98f;
+
+/* MODE BUTTON TEXT */
+const char* GLViewer::GENERATE_MODE_TEXT = "Generate mode";
+const char* GLViewer::RECONSTRUCT_MODE_TEXT = "Reconstruct mode";
+
+/* MESH RECONSTRUCTION */
+const MyMesh::Color GLViewer::RECONSTRUCTED_POINT_COLOR(.5 * 255, .9 * 255, .6 * 255);
+
 //=============================================================================
 /**** VARIABLES ****/
 
@@ -38,6 +47,8 @@ const float GLViewer::ROTATION_SPIN_FACTOR = .98f;
 PCA GLViewer::pca = PCA();
 MyMesh GLViewer::mesh;
 float* GLViewer::features;
+int GLViewer::mode = GENERATE_MODE;
+MyMesh GLViewer::recons_mesh;
 
 /* VIEW VARIABLES */
 GLfloat GLViewer::eye[3] = { 0.f, 0.f, EYE_DISTANCE };
@@ -68,6 +79,9 @@ int GLViewer::window_id;
 GLUI_Translation* GLViewer::glui_trans;
 GLUI_Translation* GLViewer::glui_zoom;
 GLUI_Checkbox* GLViewer::glui_check_circles;
+GLUI_Panel* GLViewer::features_panel;
+GLUI_Button* GLViewer::glui_modeButton;
+
 //=============================================================================
 void GLViewer::initGLUT(int *argc, char **argv)
 {
@@ -81,7 +95,7 @@ void GLViewer::initGLUT(int *argc, char **argv)
 	window_id = glutCreateWindow(WINDOW_TITLE);
 
 	glutDisplayFunc(display);
-	glutMotionFunc(motion);
+	//glutMotionFunc(motion);
 
 	glewInit();
 
@@ -156,6 +170,9 @@ void GLViewer::initGLUIComponents(void)
 	glui_check_circles =
 		new GLUI_Checkbox(control_panel, "Guidance circles", &showCircles);
 	glui_check_circles->set_alignment(GLUI_ALIGN_RIGHT);
+
+	/* Mode button */
+	glui_modeButton = glui->add_button(GENERATE_MODE_TEXT, -1, &modeButtonCallback);
 }
 //=============================================================================
 /*
@@ -163,7 +180,7 @@ void GLViewer::initGLUIComponents(void)
  */
 void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
-	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
+	features_panel = new GLUI_Rollout(glui, "Features", true);
 	cout << _nFeatures << endl;
 	features = new float[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
@@ -314,6 +331,11 @@ void GLViewer::idle(void)
 	glutPostRedisplay();
 }
 //=============================================================================
+void GLViewer::modeButtonCallback(int state)
+{
+	updateMode();
+}
+//=============================================================================
 void GLViewer::drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
 	const GLfloat* _color)
 {
@@ -369,7 +391,9 @@ void GLViewer::drawModel(void)
 			MyMesh::Normal n = mesh.normal(*fv_it);
 			float normal[3] {n[0], n[1], n[2]};
 
-			glColor3f(MODEL_COLOR[0], MODEL_COLOR[1], MODEL_COLOR[2]);
+			MyMesh::Color c = mesh.color(*fv_it);
+			glColor3f(c[0] / 255.f, c[1] / 255.f, c[2] / 255.f);
+
 			glNormal3fv(normal);
 			glVertex3fv(point);
 		}
@@ -414,6 +438,46 @@ void GLViewer::updateFeature(int _idxFeature)
 	pca.updateMesh(mesh);
 }
 //=============================================================================
+void GLViewer::updateMode()
+{
+	if (mode==GENERATE_MODE)
+	{
+		mode = RECONSTRUCT_MODE;
+		features_panel->disable();
+		features_panel->is_open = false;
+		//features_panel->hidden = true;
+		glui_modeButton->set_name(RECONSTRUCT_MODE_TEXT);
+		glui_modeButton->update_size();
+	}
+	else
+	{
+		mode = GENERATE_MODE;
+		features_panel->enable();
+		//features_panel->hidden = false;
+		features_panel->is_open = true;
+		glui_modeButton->set_name(GENERATE_MODE_TEXT);
+		glui_modeButton->update_size();
+	}
+}
+//=============================================================================
+void GLViewer::deleteReconsMeshRegion(int _vertex_idx, int _n_rings)
+{
+	queue<int> q_vertex_idx;
+	queue<int> q_visited_idx;
+	q_vertex_idx.push(_vertex_idx);
+
+	for (int i = 0; i < _n_rings + 1; i++)
+	{
+		int ringSize = q_visited_idx.size();
+		for (int j = 0; j < ringSize; j++)
+		{
+			int vertex_idx = q_vertex_idx.front();
+			q_vertex_idx.pop();
+			MyMesh::VertexHandle vertex_handle = recons_mesh.vertex_handle(vertex_idx);
+		}
+	}
+}
+//=============================================================================
 void GLViewer::initialize(int *argc, char **argv)
 {
 	initGLUT(argc, argv);
@@ -440,6 +504,19 @@ void GLViewer::loadMesh(string _mesh_filename)
 		// let the mesh update the normals
 		mesh.update_normals();
 	}
+
+	// Add vertex colors
+	mesh.request_vertex_colors();
+
+	MyMesh::ConstVertexIter v_it;
+	MyMesh::ConstVertexIter v_end(mesh.vertices_end());
+	for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it)
+	{
+		mesh.set_color(*v_it, MODEL_COLOR);
+	}
+
+	// Copy mesh to mesh to reconstruct
+	recons_mesh = mesh;
 
 	// Update guidance circle radius
 	calculateRadius();
