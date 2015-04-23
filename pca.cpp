@@ -620,7 +620,7 @@ void PCA::reconstructMesh(MyMesh& _mesh, const VectorXi& _points_state,
 	VectorXf v_recons_mesh = mesh2EigenVector(_mesh);
 
 	/* Solve alphas for this mesh*/
-	VectorXf recons_alphas = svd.solve(v_recons_mesh);
+	VectorXf recons_alphas = svd.solve(v_recons_mesh - mean_model);
 
 	/* Update mesh*/
 	updateMesh(_mesh, recons_alphas, _points_state, _color);

@@ -41,7 +41,7 @@ const MyMesh::Color GLViewer::SELECTED_INDEX_COLOR(1.f, .3f, .3f, 1.f);
 const MyMesh::Color GLViewer::RECONSTRUCTED_POINT_COLOR(.5f, .6f, .9f, 1.f);
 const MyMesh::Point GLViewer::REMOVED_POINT(0.f, 0.f, 0.f);
 const int GLViewer::REMOVE_VERTEX_INDEX = 0;
-const int GLViewer::REMOVE_N_RINGS = 4;
+const int GLViewer::REMOVE_N_RINGS = 10;
 const int GLViewer::REMOVE_MAX_RINGS = 20;
 
 //=============================================================================
