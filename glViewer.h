@@ -117,6 +117,8 @@ private:
 	static GLUI_Translation* glui_trans;
 	static GLUI_Translation* glui_zoom;
 	static GLUI_Checkbox* glui_check_circles;
+	static GLUI_Spinner** spinnersAlphas;
+	static GLUI_Spinner** spinnersFeatures;
 
 	//=========================================================================
 

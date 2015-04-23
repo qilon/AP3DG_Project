@@ -455,10 +455,10 @@ void PCA::readFeatures(string _features_filename_url)
 		n_features*sizeof(FeatureConfig));
 	inFeatures.close();
 
-	// Initialize the alphas to 0
-	initAlphas();
 	// Initialize the features to their initial values
 	initFeatures();
+	// Initialize the alphas to those of the first mesh
+	initAlphas();
 	// Center the mean and first models
 	centerModel();
 }
@@ -522,10 +522,10 @@ void PCA::centerModel()
 	}
 }
 //=============================================================================
-// Give initial values to the alphas, in this case, 0
+// Give initial values to the alphas, in this case, those of the first mesh
 void PCA::initAlphas()
 {
-	alphas = VectorXf::Zero(degrees_freedom);
+	alphas = M_feature2Alpha * features;
 }
 //=============================================================================
 void PCA::editAlpha(int _idxAlpha, float value)

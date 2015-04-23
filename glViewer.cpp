@@ -69,6 +69,8 @@ int GLViewer::window_id;
 GLUI_Translation* GLViewer::glui_trans;
 GLUI_Translation* GLViewer::glui_zoom;
 GLUI_Checkbox* GLViewer::glui_check_circles;
+GLUI_Spinner** GLViewer::spinnersAlphas;
+GLUI_Spinner** GLViewer::spinnersFeatures;
 //=============================================================================
 void GLViewer::initGLUT(int *argc, char **argv)
 {
@@ -167,39 +169,40 @@ void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
 	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
 	features = new float[_nFeatures];
+	spinnersFeatures = new GLUI_Spinner*[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
 	{
 		features[i] = _features[i].init_value;
-		GLUI_Spinner *spinner =
+		spinnersFeatures[i] =
 			new GLUI_Spinner(features_panel, _features[i].name,
 			&features[i], i, updateFeature);
-		spinner->set_float_limits(_features[i].min_value,
+		spinnersFeatures[i]->set_float_limits(_features[i].min_value,
 			_features[i].max_value);
-		spinner->set_float_val(_features[i].init_value);
+		spinnersFeatures[i]->set_float_val(_features[i].init_value);
 		//spinner->set_speed(_features[i].getIncrValue());
-		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+		spinnersFeatures[i]->set_alignment(GLUI_ALIGN_RIGHT);
 	}
 }
 //=============================================================================
 void GLViewer::initGLUIAlphas(VectorXf _alphas)
 {
 	GLUI_Panel *alphas_panel = new GLUI_Rollout(glui, "Alphas", false);
-	int degrees_freedom = _alphas.size();
-	alphas = new float[degrees_freedom];
+	alphas = new float[NUM_ALPHAS_DISPLAYED];
+	spinnersAlphas = new GLUI_Spinner*[NUM_ALPHAS_DISPLAYED];
 	for (int i = 0; i < NUM_ALPHAS_DISPLAYED; i++)
 	{
 		alphas[i] = _alphas(i);
 		stringstream ss;
 		ss << "Alpha No." << i << "\0";
 		const string name = ss.str();
-		GLUI_Spinner *spinner =
+		spinnersAlphas[i] =
 			new GLUI_Spinner(alphas_panel, name.c_str(),
 			&alphas[i], i, updateAlpha);
-		spinner->set_float_limits(ALPHA_MIN,
+		spinnersAlphas[i]->set_float_limits(ALPHA_MIN,
 			ALPHA_MAX);
-		spinner->set_float_val(_alphas(i));
+		spinnersAlphas[i]->set_float_val(_alphas(i));
 		//spinner->set_speed(_features[i].getIncrValue());
-		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+		spinnersAlphas[i]->set_alignment(GLUI_ALIGN_RIGHT);
 	}
 }
 //=============================================================================
@@ -434,9 +437,10 @@ void GLViewer::calculateRadius()
 void GLViewer::updateFeature(int _idxFeature)
 {
 	pca.editFeature(_idxFeature, features[_idxFeature]);
-	MatrixXf alphasVector = pca.getAlphas();
-	for (int i = 0; i < alphasVector.size(); i++) {
+	VectorXf alphasVector = pca.getAlphas();
+	for (int i = 0; i < NUM_ALPHAS_DISPLAYED; i++) {
 		alphas[i] = alphasVector(i);
+		spinnersAlphas[i]->set_float_val(alphasVector(i));
 	}
 	pca.updateMesh(mesh);
 }
@@ -444,9 +448,10 @@ void GLViewer::updateFeature(int _idxFeature)
 void GLViewer::updateAlpha(int _idxAlpha)
 {
 	pca.editAlpha(_idxAlpha, alphas[_idxAlpha]);
-	MatrixXf featuresVector = pca.getFeatures();
-	for (int i = 0; i < featuresVector.size(); i++) {
+	VectorXf featuresVector = pca.getFeatures();
+	for (int i = 0; i < featuresVector.size() - 1; i++) {
 		features[i] = featuresVector(i);
+		spinnersFeatures[i]->set_float_val(featuresVector(i));
 	}
 	pca.updateMesh(mesh);
 }
