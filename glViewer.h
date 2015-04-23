@@ -11,6 +11,9 @@
 
 #include "pca.h"
 //=============================================================================
+#define ALPHA_MIN -5
+#define ALPHA_MAX 5
+#define NUM_ALPHAS_DISPLAYED 10
 /**** KEYBOARD KEYS ****/
 #define UPPER_A 65
 #define LOWER_A 97
@@ -89,6 +92,7 @@ private:
 	static MyMesh mesh; /* 3d mesh */
 	static PCA pca; /* PCA model */
 	static float* features; /* feature values */
+	static float* alphas; /* PCA weights */
 
 	/* VIEW VARIABLES */
 	static GLfloat eye[3]; /* eye position*/
@@ -123,6 +127,7 @@ private:
 	static void initGLUI(void);
 	static void initGLUIComponents(void);
 	static void initGLUIFeatures(FeatureConfig* _features, int _nFeatures);
+	static void initGLUIAlphas(VectorXf _alphas);
 
 	/* GLUT AND GLUI FUNCTIONS */
 	static void display(void);
@@ -141,6 +146,7 @@ private:
 	static void zoom(GLfloat distance); /* increase or decrease eye depth */
 	static void calculateRadius(); /* updates circles radius based on mesh size */
 	static void updateFeature(int _idxFeature); /* update feature in pca and in mesh */
+	static void updateAlpha(int _idxAlpha);
 
 public:
 	static void initialize(int *argcp, char **argv);

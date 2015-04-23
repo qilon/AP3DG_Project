@@ -29,6 +29,7 @@ int main(int argc, char **argv)
 	// Load PCA info only:
 	// PCA pca = PCA(PCA_MODEL_NOISE_URL);
 	// Body Data:
+	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
 	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_NOISE_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
 	// Scapecomp:
 	// pca.computeFeatures(NUM_MESHES, MODELS_URL_PREFFIX, FEATURES_URL);
@@ -37,7 +38,8 @@ int main(int argc, char **argv)
 	GLViewer viewer;
 	viewer.initialize(&argc, argv);
 	viewer.loadMesh(MESH_FILENAME);	// Reads a mesh to get the vertices connections
-	viewer.loadPCA(PCA_MODEL_NOISE_URL, FEATURES_URL); // Loads PCA info
+	viewer.loadPCA(PCA_MODEL_URL, FEATURES_URL); // Loads PCA info
+	// viewer.loadPCA(PCA_MODEL_NOISE_URL, FEATURES_URL); // Loads PCA info for noisy meshes
 	viewer.run();
 
 	return 0;

@@ -55,8 +55,10 @@ public:
 	void computeFeatures(int _n_meshes, string _ply_models_url_preffix, string _feature_filename_url);
 	void readFeatures(string _features_filename_url);
 	void updateMesh(MyMesh& _mesh);
+	void PCA::editAlpha(int _idxAlpha, float value);
+	VectorXf getAlphas();
 	void editFeature(int idxFeature, float new_value);
-	float getFeature(int idxFeature);
+	VectorXf getFeatures();
 	FeatureConfig* getInitialFeatures();
 	int getNFeatures();
 

@@ -38,6 +38,7 @@ const float GLViewer::ROTATION_SPIN_FACTOR = .98f;
 PCA GLViewer::pca = PCA();
 MyMesh GLViewer::mesh;
 float* GLViewer::features;
+float* GLViewer::alphas;
 
 /* VIEW VARIABLES */
 GLfloat GLViewer::eye[3] = { 0.f, 0.f, EYE_DISTANCE };
@@ -129,6 +130,7 @@ void GLViewer::initGLUIComponents(void)
 	/* Load features from PCA */
 	int n_features = pca.getNFeatures();
 	initGLUIFeatures(pca.getInitialFeatures(), n_features);
+	initGLUIAlphas(pca.getAlphas());
 
 	/* Control Panel */
 	GLUI_Panel* control_panel = glui->add_panel("Controls", GLUI_PANEL_NONE);
@@ -164,7 +166,6 @@ void GLViewer::initGLUIComponents(void)
 void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 {
 	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
-	cout << _nFeatures << endl;
 	features = new float[_nFeatures];
 	for (int i = 0; i < _nFeatures; i++)
 	{
@@ -175,6 +176,27 @@ void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
 		spinner->set_float_limits(_features[i].min_value,
 			_features[i].max_value);
 		spinner->set_float_val(_features[i].init_value);
+		//spinner->set_speed(_features[i].getIncrValue());
+		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+	}
+}
+//=============================================================================
+void GLViewer::initGLUIAlphas(VectorXf _alphas)
+{
+	GLUI_Panel *alphas_panel = new GLUI_Rollout(glui, "Alphas", false);
+	int degrees_freedom = _alphas.size();
+	alphas = new float[degrees_freedom];
+	for (int i = 0; i < NUM_ALPHAS_DISPLAYED; i++)
+	{
+		alphas[i] = _alphas(i);
+		stringstream ss;
+		ss << "Alpha No." << i;
+		GLUI_Spinner *spinner =
+			new GLUI_Spinner(alphas_panel, "Alpha No.",//ss.str(),
+			&alphas[i], i, updateAlpha);
+		spinner->set_float_limits(ALPHA_MIN,
+			ALPHA_MAX);
+		spinner->set_float_val(_alphas(i));
 		//spinner->set_speed(_features[i].getIncrValue());
 		spinner->set_alignment(GLUI_ALIGN_RIGHT);
 	}
@@ -411,6 +433,20 @@ void GLViewer::calculateRadius()
 void GLViewer::updateFeature(int _idxFeature)
 {
 	pca.editFeature(_idxFeature, features[_idxFeature]);
+	MatrixXf alphasVector = pca.getAlphas();
+	for (int i = 0; i < alphasVector.size(); i++) {
+		alphas[i] = alphasVector(i);
+	}
+	pca.updateMesh(mesh);
+}
+//=============================================================================
+void GLViewer::updateAlpha(int _idxAlpha)
+{
+	pca.editAlpha(_idxAlpha, alphas[_idxAlpha]);
+	MatrixXf featuresVector = pca.getFeatures();
+	for (int i = 0; i < featuresVector.size(); i++) {
+		features[i] = featuresVector(i);
+	}
 	pca.updateMesh(mesh);
 }
 //=============================================================================

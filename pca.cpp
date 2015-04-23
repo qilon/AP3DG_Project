@@ -468,8 +468,6 @@ void PCA::updateMesh(MyMesh& _mesh)
 {
 	VectorXf new_model = mean_model;
 
-	alphas = M_feature2Alpha * features;
-
 	for (int i = 0; i < degrees_freedom; i++)
 	{
 		new_model += alphas(i) * eigen_vectors.col(i);
@@ -530,6 +528,17 @@ void PCA::initAlphas()
 	alphas = VectorXf::Zero(degrees_freedom);
 }
 //=============================================================================
+void PCA::editAlpha(int _idxAlpha, float value)
+{
+	alphas(_idxAlpha) = value;
+	features = M_feature2Alpha.fullPivHouseholderQr().solve(alphas);
+}
+//=============================================================================
+VectorXf PCA::getAlphas()
+{
+	return alphas;
+}
+//=============================================================================
 // Give initial values to the features, from the features file
 void PCA::initFeatures()
 {
@@ -544,12 +553,13 @@ void PCA::initFeatures()
 void PCA::editFeature(int idxFeature, float new_value)
 {
 	features(idxFeature) = new_value;
+	alphas = M_feature2Alpha * features;
 }
 //=============================================================================
 // Get the value of one feature
-float PCA::getFeature(int idxFeature)
+VectorXf PCA::getFeatures()
 {
-	return features(idxFeature);
+	return features;
 }
 //=============================================================================
 // Get the entirety of the initial features
