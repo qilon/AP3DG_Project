@@ -26,7 +26,7 @@ struct Traits
 	typedef int TextureIndex;
 
 	/// The default color type is OpenMesh::Vec3uc.
-	typedef OpenMesh::Vec3uc Color;
+	typedef OpenMesh::Vec4f Color;
 
 #ifndef DOXY_IGNORE_THIS
 	VertexTraits{};
@@ -44,6 +44,14 @@ struct Traits
 typedef OpenMesh::PolyMesh_ArrayKernelT<Traits> MyMesh;
 //=============================================================================
 int readMesh(MyMesh& mesh, const char* filename, bool read_vertex_colors = false);
-Eigen::MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
+//=============================================================================
+MatrixXf mesh2EigenMatrix(const MyMesh& mesh);
+//=============================================================================
 MyMesh eigenMatrix2Mesh(const MyMesh& original, const MatrixXf& inputMatrix);
-void addNoise(string _models_url_preffix, string _models_url_suffix, int first_index, int _n_meshes, string _models_noise_url);
+//=============================================================================
+void addNoise(string _models_url_preffix, string _models_url_suffix, 
+	int first_index, int _n_meshes, string _models_noise_url);
+//=============================================================================
+VectorXf mesh2EigenVector(const MyMesh& mesh);
+//=============================================================================
+

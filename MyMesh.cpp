@@ -90,3 +90,23 @@ void addNoise(string _models_url_preffix, string _models_url_suffix, int first_i
 		}
 	}
 }
+//=============================================================================
+/* Convert a 3d mesh into a vector of size 3*N */
+VectorXf mesh2EigenVector(const MyMesh& _mesh) {
+	VectorXf v_mesh(3 * _mesh.n_vertices());
+
+	MyMesh::ConstVertexIter v_it;
+	MyMesh::ConstVertexIter v_end(_mesh.vertices_end());
+	int i = 0;
+	for (v_it = _mesh.vertices_begin(); v_it != v_end; ++v_it)
+	{
+		MyMesh::Point p = _mesh.point(*v_it);
+		v_mesh(i) = p[0];
+		v_mesh(i + 1) = p[1];
+		v_mesh(i + 2) = p[2];
+
+		i += 3;
+	}
+	return v_mesh;
+}
+//=============================================================================

@@ -574,3 +574,67 @@ int PCA::getNFeatures()
 	return n_features;
 }
 //=============================================================================
+void PCA::updateMesh(MyMesh& _mesh, const VectorXf& _alphas, 
+	const VectorXi& _points_state, const MyMesh::Color& _color)
+{
+	VectorXf new_model = mean_model;
+
+	for (int i = 0; i < degrees_freedom; i++)
+	{
+		new_model += _alphas(i) * eigen_vectors.col(i);
+	}
+
+	MyMesh::ConstVertexIter v_it;
+	MyMesh::ConstVertexIter v_end(_mesh.vertices_end());
+	int i = 0;
+	for (v_it = _mesh.vertices_begin(); v_it != v_end; ++v_it) {
+		/* Update only reconstructed points */
+		int v_idx = v_it.handle().idx();
+		if (!_points_state(v_idx))
+		{
+			float x = new_model(3 * i);
+			float y = new_model(3 * i + 1);
+			float z = new_model(3 * i + 2);
+			_mesh.point(*v_it)[0] = x;
+			_mesh.point(*v_it)[1] = y;
+			_mesh.point(*v_it)[2] = z;
+			_mesh.set_color(*v_it, _color);
+		}
+		i++;
+	}
+
+	/* Update mesh normals */
+	_mesh.update_normals();
+}
+//=============================================================================
+/* Function that, given a mesh and a vector identifying which points are given 
+ * and which are unknown, reconstructs the missing points */
+void PCA::reconstructMesh(MyMesh& _mesh, const VectorXi& _points_state,
+	const MyMesh::Color& _color)
+{
+	/* Convert the vector of the the state of each point into a matrix 3N*D */
+	MatrixXf m_points_state(vector_size, degrees_freedom);
+	MatrixXf m_ones = MatrixXf::Ones(3, degrees_freedom);
+	for (int i = 0; i < _points_state.size(); i++)
+	{
+		m_points_state.block(3 * i, 0, 3, degrees_freedom) =
+			_points_state(i) * m_ones;
+	}
+
+	/* Set to zero the unknown coordinates of the mesh into the eigen vectors */
+	MatrixXf recons_eigen_vectors = 
+		eigen_vectors.cwiseProduct(m_points_state);
+
+	/* Compute SVD of the cropped version of the eigenvectors */
+	JacobiSVD<MatrixXf> svd(recons_eigen_vectors, ComputeThinU | ComputeThinV);
+
+	/* Input mesh to single column vector */
+	VectorXf v_recons_mesh = mesh2EigenVector(_mesh);
+
+	/* Solve alphas for this mesh*/
+	VectorXf recons_alphas = svd.solve(v_recons_mesh - mean_model);
+
+	/* Update mesh*/
+	updateMesh(_mesh, recons_alphas, _points_state, _color);
+}
+//=============================================================================

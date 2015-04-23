@@ -10,6 +10,7 @@
 #endif
 
 #include "pca.h"
+#include <queue>
 //=============================================================================
 #define ALPHA_MIN -5
 #define ALPHA_MAX 5
@@ -45,6 +46,14 @@
 #define LOWER_T 116
 #define UPPER_W 87
 #define LOWER_W 119
+
+/* MODES */
+#define GENERATE_MODE		0
+#define RECONSTRUCT_MODE	1
+
+/* TYPES OF POINTS */
+#define UNKNOWN_POINT	0
+#define KNOWN_POINT		1
 //=============================================================================
 using namespace std;
 using namespace Eigen;
@@ -70,7 +79,7 @@ private:
 	const static GLfloat LIGHT_AMBIENT[4];
 	const static GLfloat LIGHT_POSITION[4];
 	const static GLfloat BACKGROUND_COLOUR[4];
-	const static GLfloat MODEL_COLOR[3];
+	const static MyMesh::Color MODEL_COLOR;
 
 	/* GUIDANCE CIRCLES PARAMETERS */
 	const static GLfloat RADIUS_OFFSET;
@@ -84,6 +93,18 @@ private:
 	const static float ZOOM_SPEED;
 	const static float ROTATION_SPIN_FACTOR;
 
+	/* MODE BUTTON TEXT */
+	const static char* GENERATE_MODE_TEXT;
+	const static char* RECONSTRUCT_MODE_TEXT;
+
+	/* MESH RECONSTRUCTION */
+	const static MyMesh::Color RECONSTRUCTED_POINT_COLOR;
+	const static MyMesh::Color SELECTED_INDEX_COLOR;
+	const static MyMesh::Point REMOVED_POINT;
+	const static int REMOVE_VERTEX_INDEX;
+	const static int REMOVE_N_RINGS;
+	const static int REMOVE_MAX_RINGS;
+
 	//=========================================================================
 
 	/**** VARIABLES ****/
@@ -93,6 +114,12 @@ private:
 	static PCA pca; /* PCA model */
 	static float* features; /* feature values */
 	static float* alphas; /* PCA weights */
+
+	static int mode;
+	static MyMesh recons_mesh;
+	static VectorXi points_state;
+	static int remove_vertex_index;
+	static int remove_n_rings;
 
 	/* VIEW VARIABLES */
 	static GLfloat eye[3]; /* eye position*/
@@ -119,6 +146,10 @@ private:
 	static GLUI_Checkbox* glui_check_circles;
 	static GLUI_Spinner** spinnersAlphas;
 	static GLUI_Spinner** spinnersFeatures;
+	static GLUI_Rollout* features_rollout;
+	static GLUI_Rollout* alphas_rollout;
+	static GLUI_Rollout* recons_rollout;
+	static GLUI_Button* glui_modeButton;
 
 	//=========================================================================
 
@@ -130,6 +161,8 @@ private:
 	static void initGLUIComponents(void);
 	static void initGLUIFeatures(FeatureConfig* _features, int _nFeatures);
 	static void initGLUIAlphas(VectorXf _alphas);
+	static void initGLUIReconstruction();
+	static void initGLUIControlPanel();
 
 	/* GLUT AND GLUI FUNCTIONS */
 	static void display(void);
@@ -138,6 +171,10 @@ private:
 	static void motion(int x, int y);
 	static void key(unsigned char key, int x, int y);
 	static void idle(void);
+	static void modeButtonCallback(int state);
+	static void removePointsButtonCallback(int state);
+	static void reconstructButtonCallback(int state);
+	static void resetColorsButtonCallback(int state);
 
 	/* DRAWING FUNCTIONS */
 	static void drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
@@ -149,6 +186,10 @@ private:
 	static void calculateRadius(); /* updates circles radius based on mesh size */
 	static void updateFeature(int _idxFeature); /* update feature in pca and in mesh */
 	static void updateAlpha(int _idxAlpha);
+	static void updateMode();
+	static void removeReconsMeshRegion(int _vertex_idx, int _n_rings);
+	static void reconstruct();
+	static void setMeshColor(MyMesh& _mesh, const MyMesh::Color& _color);
 
 public:
 	static void initialize(int *argcp, char **argv);

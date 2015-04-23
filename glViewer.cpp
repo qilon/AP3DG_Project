@@ -18,7 +18,7 @@ const GLfloat GLViewer::ZOOM_INCR = 0.2f;
 const GLfloat GLViewer::LIGHT_AMBIENT[4] = { 0.1f, 0.1f, 0.1f, 1.f };
 const GLfloat GLViewer::LIGHT_POSITION[4] = { .5f, .5f, 1.f, 0.f };
 const GLfloat GLViewer::BACKGROUND_COLOUR[4] = { 0.9f, 0.9f, 0.9f, 1.f };
-const GLfloat GLViewer::MODEL_COLOR[3] = { .9f, .79f, .69f };
+const MyMesh::Color GLViewer::MODEL_COLOR(.9f, .79f, .69f, 1.f);
 
 /* GUIDANCE CIRCLES PARAMETERS */
 const GLfloat GLViewer::RADIUS_OFFSET = .1f;
@@ -31,6 +31,19 @@ const GLfloat GLViewer::CIRCLE_YZ_COLOR[3] = { 0.f, 0.f, 1.f };
 const float GLViewer::TRANSLATION_SPEED = .005f;
 const float GLViewer::ZOOM_SPEED = .005f;
 const float GLViewer::ROTATION_SPIN_FACTOR = .98f;
+
+/* MODE BUTTON TEXT */
+const char* GLViewer::GENERATE_MODE_TEXT = "Go to Generation mode";
+const char* GLViewer::RECONSTRUCT_MODE_TEXT = "Go to Reconstruction mode";
+
+/* MESH RECONSTRUCTION */
+const MyMesh::Color GLViewer::SELECTED_INDEX_COLOR(1.f, .3f, .3f, 1.f);
+const MyMesh::Color GLViewer::RECONSTRUCTED_POINT_COLOR(.5f, .6f, .9f, 1.f);
+const MyMesh::Point GLViewer::REMOVED_POINT(0.f, 0.f, 0.f);
+const int GLViewer::REMOVE_VERTEX_INDEX = 0;
+const int GLViewer::REMOVE_N_RINGS = 10;
+const int GLViewer::REMOVE_MAX_RINGS = 20;
+
 //=============================================================================
 /**** VARIABLES ****/
 
@@ -39,6 +52,11 @@ PCA GLViewer::pca = PCA();
 MyMesh GLViewer::mesh;
 float* GLViewer::features;
 float* GLViewer::alphas;
+int GLViewer::mode = RECONSTRUCT_MODE;
+MyMesh GLViewer::recons_mesh;
+VectorXi GLViewer::points_state;
+int GLViewer::remove_vertex_index = REMOVE_VERTEX_INDEX;
+int GLViewer::remove_n_rings = REMOVE_N_RINGS;
 
 /* VIEW VARIABLES */
 GLfloat GLViewer::eye[3] = { 0.f, 0.f, EYE_DISTANCE };
@@ -71,11 +89,16 @@ GLUI_Translation* GLViewer::glui_zoom;
 GLUI_Checkbox* GLViewer::glui_check_circles;
 GLUI_Spinner** GLViewer::spinnersAlphas;
 GLUI_Spinner** GLViewer::spinnersFeatures;
+GLUI_Rollout* GLViewer::features_rollout;
+GLUI_Rollout* GLViewer::alphas_rollout;
+GLUI_Rollout* GLViewer::recons_rollout;
+GLUI_Button* GLViewer::glui_modeButton;
+
 //=============================================================================
 void GLViewer::initGLUT(int *argc, char **argv)
 {
 	glutInit(argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE | GLUT_ALPHA);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	glutInitWindowPosition((glutGet(GLUT_SCREEN_WIDTH) - WINDOW_WIDTH) / 2,
@@ -83,8 +106,12 @@ void GLViewer::initGLUT(int *argc, char **argv)
 
 	window_id = glutCreateWindow(WINDOW_TITLE);
 
+	// Uncomment to enable transparencies
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+
 	glutDisplayFunc(display);
-	glutMotionFunc(motion);
+	//glutMotionFunc(motion);
 
 	glewInit();
 
@@ -134,7 +161,126 @@ void GLViewer::initGLUIComponents(void)
 	initGLUIFeatures(pca.getInitialFeatures(), n_features);
 	initGLUIAlphas(pca.getAlphas());
 
+	/* Reconstruction Panel */
+	initGLUIReconstruction();
+
 	/* Control Panel */
+	initGLUIControlPanel();
+}
+//=============================================================================
+/*
+ * Function that creates a spinner for each of the features defined in pca
+ */
+void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
+{
+	features_rollout = new GLUI_Rollout(glui, "Features", false);
+	features = new float[_nFeatures];
+	spinnersFeatures = new GLUI_Spinner*[_nFeatures];
+	for (int i = 0; i < _nFeatures; i++)
+	{
+		features[i] = _features[i].init_value;
+		GLUI_Spinner *spinner =
+			new GLUI_Spinner(features_rollout, _features[i].name,
+			&features[i], i, updateFeature);
+		spinner->set_float_limits(_features[i].min_value,
+			_features[i].max_value);
+		spinner->set_float_val(_features[i].init_value);
+		//spinner->set_speed(_features[i].getIncrValue());
+		spinner->set_alignment(GLUI_ALIGN_RIGHT);
+		spinnersFeatures[i] = spinner;
+	}
+
+	if (mode == GENERATE_MODE)
+	{
+		features_rollout->open();
+		features_rollout->enable();
+	}
+	else // RECONSTRUCT_MODE
+	{
+		features_rollout->disable();
+		features_rollout->close();
+	}
+}
+//=============================================================================
+void GLViewer::initGLUIAlphas(VectorXf _alphas)
+{
+	alphas_rollout = new GLUI_Rollout(glui, "Alphas", false);
+	alphas = new float[NUM_ALPHAS_DISPLAYED];
+	spinnersAlphas = new GLUI_Spinner*[NUM_ALPHAS_DISPLAYED];
+	for (int i = 0; i < NUM_ALPHAS_DISPLAYED; i++)
+	{
+		alphas[i] = _alphas(i);
+		stringstream ss;
+		ss << "Alpha No." << i << "\0";
+		const string name = ss.str();
+		spinnersAlphas[i] =
+			new GLUI_Spinner(alphas_rollout, name.c_str(),
+			&alphas[i], i, updateAlpha);
+		spinnersAlphas[i]->set_float_limits(ALPHA_MIN,
+			ALPHA_MAX);
+		spinnersAlphas[i]->set_float_val(_alphas(i));
+		//spinner->set_speed(_features[i].getIncrValue());
+		spinnersAlphas[i]->set_alignment(GLUI_ALIGN_RIGHT);
+	}
+
+	if (mode == GENERATE_MODE)
+	{
+		alphas_rollout->open();
+		alphas_rollout->enable();
+	}
+	else // RECONSTRUCT_MODE
+	{
+		alphas_rollout->disable();
+		alphas_rollout->close();
+	}
+}
+//=============================================================================
+void GLViewer::initGLUIReconstruction()
+{
+	recons_rollout = new GLUI_Rollout(glui, "Reconstruction", false);
+
+	GLUI_Panel* remove_panel = new GLUI_Panel(recons_rollout,"",GLUI_PANEL_RAISED);
+
+	GLUI_Spinner* vertex_index_spinner =
+		new GLUI_Spinner(remove_panel, "Vertex index",
+		&remove_vertex_index, -1);
+	vertex_index_spinner->set_int_val(REMOVE_VERTEX_INDEX);
+	vertex_index_spinner->set_int_limits(0, recons_mesh.n_vertices()-1);
+	vertex_index_spinner->set_speed(0.1f);
+
+	GLUI_Spinner* n_rings_spinner =
+		new GLUI_Spinner(remove_panel, "No. rings",
+		&remove_n_rings, -1);
+	n_rings_spinner->set_int_val(REMOVE_N_RINGS);
+	n_rings_spinner->set_int_limits(0, REMOVE_MAX_RINGS);
+	n_rings_spinner->set_speed(0.1f);
+
+	/* Remove button */
+	GLUI_Button* glui_removeButton = new GLUI_Button(remove_panel,
+		"Remove points", -1, &removePointsButtonCallback);
+
+	/* Reconstruct button */
+	GLUI_Button* glui_reconstructButton = new GLUI_Button(recons_rollout,
+		"Reconstruct model", -1, &reconstructButtonCallback);
+
+	/* Reset colors button */
+	GLUI_Button* glui_resetColorsButton = new GLUI_Button(recons_rollout,
+		"Reset colors", -1, &resetColorsButtonCallback);
+
+	if (mode == GENERATE_MODE)
+	{
+		recons_rollout->disable();
+		recons_rollout->close();
+	}
+	else // RECONSTRUCT_MODE
+	{
+		recons_rollout->open();
+		recons_rollout->enable();
+	}
+}
+//=============================================================================
+void GLViewer::initGLUIControlPanel()
+{
 	GLUI_Panel* control_panel = glui->add_panel("Controls", GLUI_PANEL_NONE);
 
 	GLUI_Panel* trans_panel = glui->add_panel_to_panel(control_panel, "Translations",
@@ -160,50 +306,9 @@ void GLViewer::initGLUIComponents(void)
 	glui_check_circles =
 		new GLUI_Checkbox(control_panel, "Guidance circles", &showCircles);
 	glui_check_circles->set_alignment(GLUI_ALIGN_RIGHT);
-}
-//=============================================================================
-/*
- * Function that creates a spinner for each of the features defined in pca
- */
-void GLViewer::initGLUIFeatures(FeatureConfig* _features, int _nFeatures)
-{
-	GLUI_Panel *features_panel = new GLUI_Rollout(glui, "Features", true);
-	features = new float[_nFeatures];
-	spinnersFeatures = new GLUI_Spinner*[_nFeatures];
-	for (int i = 0; i < _nFeatures; i++)
-	{
-		features[i] = _features[i].init_value;
-		spinnersFeatures[i] =
-			new GLUI_Spinner(features_panel, _features[i].name,
-			&features[i], i, updateFeature);
-		spinnersFeatures[i]->set_float_limits(_features[i].min_value,
-			_features[i].max_value);
-		spinnersFeatures[i]->set_float_val(_features[i].init_value);
-		//spinner->set_speed(_features[i].getIncrValue());
-		spinnersFeatures[i]->set_alignment(GLUI_ALIGN_RIGHT);
-	}
-}
-//=============================================================================
-void GLViewer::initGLUIAlphas(VectorXf _alphas)
-{
-	GLUI_Panel *alphas_panel = new GLUI_Rollout(glui, "Alphas", false);
-	alphas = new float[NUM_ALPHAS_DISPLAYED];
-	spinnersAlphas = new GLUI_Spinner*[NUM_ALPHAS_DISPLAYED];
-	for (int i = 0; i < NUM_ALPHAS_DISPLAYED; i++)
-	{
-		alphas[i] = _alphas(i);
-		stringstream ss;
-		ss << "Alpha No." << i << "\0";
-		const string name = ss.str();
-		spinnersAlphas[i] =
-			new GLUI_Spinner(alphas_panel, name.c_str(),
-			&alphas[i], i, updateAlpha);
-		spinnersAlphas[i]->set_float_limits(ALPHA_MIN,
-			ALPHA_MAX);
-		spinnersAlphas[i]->set_float_val(_alphas(i));
-		//spinner->set_speed(_features[i].getIncrValue());
-		spinnersAlphas[i]->set_alignment(GLUI_ALIGN_RIGHT);
-	}
+
+	/* Mode button */
+	glui_modeButton = glui->add_button(RECONSTRUCT_MODE_TEXT, -1, &modeButtonCallback);
 }
 //=============================================================================
 void GLViewer::display(void)
@@ -231,8 +336,6 @@ void GLViewer::display(void)
 	// GLUI Rotation
 	glMultMatrixf(rotation);
 
-	drawModel();
-
 	// Guidance Circles
 	if (showCircles)
 	{
@@ -242,6 +345,8 @@ void GLViewer::display(void)
 		drawCircle(radius, 2, CIRCLE_NUM_LINES, CIRCLE_YZ_COLOR);
 		glEnable(GL_LIGHTING);
 	}
+
+	drawModel();
 
 	glutSwapBuffers();
 }
@@ -340,6 +445,26 @@ void GLViewer::idle(void)
 	glutPostRedisplay();
 }
 //=============================================================================
+void GLViewer::modeButtonCallback(int state)
+{
+	updateMode();
+}
+//=============================================================================
+void GLViewer::removePointsButtonCallback(int state)
+{
+	removeReconsMeshRegion(remove_vertex_index, remove_n_rings);
+}
+//=============================================================================
+void GLViewer::reconstructButtonCallback(int state)
+{
+	reconstruct();
+}
+//=============================================================================
+void GLViewer::resetColorsButtonCallback(int state)
+{
+	setMeshColor(recons_mesh, MODEL_COLOR);
+}
+//=============================================================================
 void GLViewer::drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
 	const GLfloat* _color)
 {
@@ -382,22 +507,73 @@ void GLViewer::drawCircle(GLfloat _radius, GLint _plane, GLint _numLines,
 //=============================================================================
 void GLViewer::drawModel(void)
 {
+	MyMesh* mesh2draw;
 	glBegin(GL_TRIANGLES);
-	for (MyMesh::FaceIter f_it = mesh.faces_begin(); 
-		f_it != mesh.faces_end(); ++f_it)
+	if (mode==RECONSTRUCT_MODE)
 	{
-		MyMesh::FaceVertexIter fv_it;
-		for (fv_it = mesh.fv_iter(*f_it); fv_it.is_valid(); ++fv_it)
+		mesh2draw = &recons_mesh;
+
+		for (MyMesh::FaceIter f_it = mesh2draw->faces_begin();
+			f_it != mesh2draw->faces_end(); ++f_it)
 		{
-			MyMesh::Point p = mesh.point(*fv_it);
-			float point[3] {p[0], p[1], p[2]};
+			bool draw_triangle = true;
+			MyMesh::FaceVertexIter fv_it;
+			for (fv_it = mesh2draw->fv_iter(*f_it); fv_it.is_valid(); ++fv_it)
+			{
+				int v_idx = fv_it.handle().idx();
+				draw_triangle = draw_triangle && points_state(v_idx);
+			}
 
-			MyMesh::Normal n = mesh.normal(*fv_it);
-			float normal[3] {n[0], n[1], n[2]};
+			if (draw_triangle)
+			{
+				for (fv_it = mesh2draw->fv_iter(*f_it); fv_it.is_valid(); ++fv_it)
+				{
+					MyMesh::Point p = mesh2draw->point(*fv_it);
+					float point[3] {p[0], p[1], p[2]};
 
-			glColor3f(MODEL_COLOR[0], MODEL_COLOR[1], MODEL_COLOR[2]);
-			glNormal3fv(normal);
-			glVertex3fv(point);
+					MyMesh::Normal n = mesh2draw->normal(*fv_it);
+					float normal[3] {n[0], n[1], n[2]};
+
+					int v_idx = fv_it.handle().idx();
+					MyMesh::Color c;
+					if (v_idx==remove_vertex_index)
+					{
+						c = SELECTED_INDEX_COLOR;
+					}
+					else
+					{
+						c = mesh2draw->color(*fv_it);
+					}
+					glColor4f(c[0], c[1], c[2], c[3]);
+
+					glNormal3fv(normal);
+					glVertex3fv(point);
+				}
+			}
+		}
+	}
+	else // GENERATE_MODE
+	{
+		mesh2draw = &mesh;
+
+		for (MyMesh::FaceIter f_it = mesh2draw->faces_begin();
+			f_it != mesh2draw->faces_end(); ++f_it)
+		{
+			MyMesh::FaceVertexIter fv_it;
+			for (fv_it = mesh2draw->fv_iter(*f_it); fv_it.is_valid(); ++fv_it)
+			{
+				MyMesh::Point p = mesh2draw->point(*fv_it);
+				float point[3] {p[0], p[1], p[2]};
+
+				MyMesh::Normal n = mesh2draw->normal(*fv_it);
+				float normal[3] {n[0], n[1], n[2]};
+
+				MyMesh::Color c = mesh2draw->color(*fv_it);
+				glColor4f(c[0], c[1], c[2], c[3]);
+
+				glNormal3fv(normal);
+				glVertex3fv(point);
+			}
 		}
 	}
 	glEnd();
@@ -456,6 +632,95 @@ void GLViewer::updateAlpha(int _idxAlpha)
 	pca.updateMesh(mesh);
 }
 //=============================================================================
+void GLViewer::updateMode()
+{
+	if (mode==GENERATE_MODE)
+	{
+		mode = RECONSTRUCT_MODE;
+		features_rollout->disable();
+		features_rollout->close();
+		alphas_rollout->disable();
+		alphas_rollout->close();
+		recons_rollout->open();
+		recons_rollout->enable();
+		glui_modeButton->set_name(GENERATE_MODE_TEXT);
+		glui_modeButton->update_size();
+	}
+	else
+	{
+		mode = GENERATE_MODE;
+		features_rollout->open();
+		features_rollout->enable();
+		alphas_rollout->open();
+		alphas_rollout->enable();
+		recons_rollout->disable();
+		recons_rollout->close();
+		glui_modeButton->set_name(RECONSTRUCT_MODE_TEXT);
+		glui_modeButton->update_size();
+	}
+}
+//=============================================================================
+void GLViewer::removeReconsMeshRegion(int _vertex_idx, int _n_rings)
+{
+	// FIFO queue containing indexes of vertices to mark as unknown
+	queue<int> q_vertex_idx;
+	q_vertex_idx.push(_vertex_idx);
+
+	// Mark origin vertex as unknown and change its color
+	recons_mesh.point(recons_mesh.vertex_handle(_vertex_idx)) = REMOVED_POINT;
+	points_state(_vertex_idx) = UNKNOWN_POINT;
+
+	// Set of points already visited
+	set<int> s_visited_idx;
+	s_visited_idx.insert(_vertex_idx);
+
+	// Mark as unknowns all the points in the _n_rings of the origin point
+	for (int i = 0; i < _n_rings; i++)
+	{
+		int n_points_prev_ring = q_vertex_idx.size();
+
+		for (int j = 0; j < n_points_prev_ring; j++)
+		{
+			int v_idx = q_vertex_idx.front();
+			q_vertex_idx.pop(); // Remove from queue
+
+			MyMesh::VertexHandle v_handle = recons_mesh.vertex_handle(v_idx);
+			MyMesh::VertexVertexIter vv_it;
+			for (vv_it = mesh.vv_iter(v_handle); vv_it; ++vv_it)
+			{
+				int v_idx = vv_it.handle().idx();
+				if (s_visited_idx.count(v_idx)==0)
+				{
+					recons_mesh.point(*vv_it) = REMOVED_POINT;
+					points_state(v_idx) = UNKNOWN_POINT;
+					s_visited_idx.insert(v_idx);
+					q_vertex_idx.push(v_idx);
+				}
+			}
+		}
+	}
+
+	glutPostRedisplay();
+}
+//=============================================================================
+void GLViewer::reconstruct()
+{
+	/* Reconstruct model */
+	pca.reconstructMesh(recons_mesh, points_state, RECONSTRUCTED_POINT_COLOR);
+
+	/* Set all points to known */
+	points_state = VectorXi::Ones(recons_mesh.n_vertices());
+}
+//=============================================================================
+void GLViewer::setMeshColor(MyMesh& _mesh, const MyMesh::Color& _color)
+{
+	MyMesh::VertexIter v_it, v_end(_mesh.vertices_end());
+	for (v_it = _mesh.vertices_begin(); v_it != v_end; v_it++)
+	{
+		_mesh.set_color(*v_it, _color);
+	}
+}
+//=============================================================================
 void GLViewer::initialize(int *argc, char **argv)
 {
 	initGLUT(argc, argv);
@@ -482,6 +747,22 @@ void GLViewer::loadMesh(string _mesh_filename)
 		// let the mesh update the normals
 		mesh.update_normals();
 	}
+
+	// Add vertex colors
+	mesh.request_vertex_colors();
+
+	MyMesh::ConstVertexIter v_it;
+	MyMesh::ConstVertexIter v_end(mesh.vertices_end());
+	for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it)
+	{
+		mesh.set_color(*v_it, MODEL_COLOR);
+	}
+
+	// Copy mesh to mesh to reconstruct
+	recons_mesh = mesh;
+
+	// All the points are known points
+	points_state = VectorXi::Ones(recons_mesh.n_vertices())*KNOWN_POINT;
 
 	// Update guidance circle radius
 	calculateRadius();
@@ -519,3 +800,4 @@ void GLViewer::destroy()
 	delete[] alphas;
 	delete[] features;
 }
+//=============================================================================

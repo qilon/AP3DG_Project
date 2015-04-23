@@ -61,6 +61,8 @@ public:
 	VectorXf getFeatures();
 	FeatureConfig* getInitialFeatures();
 	int getNFeatures();
+	void reconstructMesh(MyMesh& _mesh, const VectorXi& _points_state,
+		const MyMesh::Color& color);
 
 private:
 	int degrees_freedom;
@@ -82,5 +84,7 @@ private:
 	void centerModel();
 	void initAlphas();
 	void initFeatures();
+	void updateMesh(MyMesh& _mesh, const VectorXf& _alphas,
+		const VectorXi& _points_state, const MyMesh::Color& _color);
 };
 //=============================================================================
