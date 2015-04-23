@@ -309,6 +309,11 @@ void GLViewer::initGLUIControlPanel()
 
 	/* Mode button */
 	glui_modeButton = glui->add_button(RECONSTRUCT_MODE_TEXT, -1, &modeButtonCallback);
+
+	if (mode == RECONSTRUCT_MODE)
+	{
+		glui_modeButton->set_name(GENERATE_MODE_TEXT);
+	}
 }
 //=============================================================================
 void GLViewer::display(void)
