@@ -190,9 +190,10 @@ void GLViewer::initGLUIAlphas(VectorXf _alphas)
 	{
 		alphas[i] = _alphas(i);
 		stringstream ss;
-		ss << "Alpha No." << i;
+		ss << "Alpha No." << i << "\0";
+		const string name = ss.str();
 		GLUI_Spinner *spinner =
-			new GLUI_Spinner(alphas_panel, "Alpha No.",//ss.str(),
+			new GLUI_Spinner(alphas_panel, name.c_str(),
 			&alphas[i], i, updateAlpha);
 		spinner->set_float_limits(ALPHA_MIN,
 			ALPHA_MAX);
