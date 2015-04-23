@@ -155,5 +155,6 @@ public:
 	static void loadMesh(string _mesh_filename);
 	static void loadPCA(string _pca_filename, string _features_filename);
 	static void run();
+	static void destroy();
 };
 //=============================================================================

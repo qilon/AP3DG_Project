@@ -41,6 +41,7 @@ int main(int argc, char **argv)
 	viewer.loadPCA(PCA_MODEL_URL, FEATURES_URL); // Loads PCA info
 	// viewer.loadPCA(PCA_MODEL_NOISE_URL, FEATURES_URL); // Loads PCA info for noisy meshes
 	viewer.run();
+	viewer.destroy();
 
 	return 0;
 }

@@ -512,3 +512,10 @@ void GLViewer::run()
 	glutMainLoop();
 }
 //=============================================================================
+void GLViewer::destroy()
+{
+	delete[] spinnersAlphas;
+	delete[] spinnersFeatures;
+	delete[] alphas;
+	delete[] features;
+}
