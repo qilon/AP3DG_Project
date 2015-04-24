@@ -574,16 +574,9 @@ int PCA::getNFeatures()
 	return n_features;
 }
 //=============================================================================
-void PCA::updateMesh(MyMesh& _mesh, const VectorXf& _alphas, 
+void PCA::updateMesh(MyMesh& _mesh, const VectorXf& _v_mesh, 
 	const VectorXi& _points_state, const MyMesh::Color& _color)
 {
-	VectorXf new_model = mean_model;
-
-	for (int i = 0; i < degrees_freedom; i++)
-	{
-		new_model += _alphas(i) * eigen_vectors.col(i);
-	}
-
 	MyMesh::ConstVertexIter v_it;
 	MyMesh::ConstVertexIter v_end(_mesh.vertices_end());
 	int i = 0;
@@ -592,9 +585,9 @@ void PCA::updateMesh(MyMesh& _mesh, const VectorXf& _alphas,
 		int v_idx = v_it.handle().idx();
 		if (!_points_state(v_idx))
 		{
-			float x = new_model(3 * i);
-			float y = new_model(3 * i + 1);
-			float z = new_model(3 * i + 2);
+			float x = _v_mesh(3 * i);
+			float y = _v_mesh(3 * i + 1);
+			float z = _v_mesh(3 * i + 2);
 			_mesh.point(*v_it)[0] = x;
 			_mesh.point(*v_it)[1] = y;
 			_mesh.point(*v_it)[2] = z;
@@ -608,33 +601,115 @@ void PCA::updateMesh(MyMesh& _mesh, const VectorXf& _alphas,
 }
 //=============================================================================
 /* Function that, given a mesh and a vector identifying which points are given 
- * and which are unknown, reconstructs the missing points */
+and which are unknown, reconstructs the missing points */
 void PCA::reconstructMesh(MyMesh& _mesh, const VectorXi& _points_state,
 	const MyMesh::Color& _color)
 {
-	/* Convert the vector of the the state of each point into a matrix 3N*D */
-	MatrixXf m_points_state(vector_size, degrees_freedom);
-	MatrixXf m_ones = MatrixXf::Ones(3, degrees_freedom);
+	time_t tstart, tend;
+	tstart = time(0);
+
+	int n_knowns = _points_state.sum(); // Number of known points
+	int n_unknowns = _points_state.size() - n_knowns; // Number of unknown points
+
+	/* Column vector representation of the mesh */
+	VectorXf v_mesh = mesh2EigenVector(_mesh);
+
+	/* Vector of the difference of the known points of the mesh with the mean model */
+	VectorXf diff_s_k(3 * n_knowns);
+
+	/* Vector of unknown points from the mean model */
+	VectorXf mean_s_u(3 * n_unknowns);
+
+	// Matrix of known coordinates of eigen vectors - V_k
+	MatrixXf v_k(3 * n_knowns, degrees_freedom);
+
+	// Matrix of known coordinates of eigen vectors - V_u
+	MatrixXf v_u(3 * n_unknowns, degrees_freedom);
+
+	/* Vector of indexes of the unknown points of the mesh */
+	VectorXi unknown_indexes(n_unknowns);
+
+	/* Fills the matrices V and V* and store indexes of unknown points */
+	int known_row = 0;
+	int unknown_row = 0;
 	for (int i = 0; i < _points_state.size(); i++)
 	{
-		m_points_state.block(3 * i, 0, 3, degrees_freedom) =
-			_points_state(i) * m_ones;
+		if (_points_state(i))
+		{
+			v_k.block(3 * known_row, 0, 3, degrees_freedom) = 
+				eigen_vectors.block(3 * i, 0, 3, degrees_freedom);
+			diff_s_k.segment(3 * known_row, 3) = 
+				v_mesh.segment(3 * i, 3) - mean_model.segment(3 * i, 3);
+			known_row++;
+		}
+		else
+		{
+			v_u.block(3 * unknown_row, 0, 3, degrees_freedom) =
+				eigen_vectors.block(3 * i, 0, 3, degrees_freedom);
+			unknown_indexes(unknown_row) = i;
+			mean_s_u.segment(3 * unknown_row, 3) = mean_model.segment(3 * i, 3);
+			unknown_row++;
+		}
 	}
 
-	/* Set to zero the unknown coordinates of the mesh into the eigen vectors */
-	MatrixXf recons_eigen_vectors = 
-		eigen_vectors.cwiseProduct(m_points_state);
+	/* Computes pseudoinverse of V* */
+	MatrixXf pinv_v_u = pinv(v_u);
 
-	/* Compute SVD of the cropped version of the eigenvectors */
-	JacobiSVD<MatrixXf> svd(recons_eigen_vectors, ComputeThinU | ComputeThinV);
+	/* Computes matrix A = V' * V*^-1 */
+	MatrixXf A = v_k * pinv_v_u;
 
-	/* Input mesh to single column vector */
-	VectorXf v_recons_mesh = mesh2EigenVector(_mesh);
+	/* Estimated points */
+	VectorXf new_points = ( pinv(A.transpose() * A) * A.transpose() * diff_s_k )
+		+ mean_s_u;
 
-	/* Solve alphas for this mesh*/
-	VectorXf recons_alphas = svd.solve(v_recons_mesh - mean_model);
+	tend = time(0);
+	cout << "Elapsed time: " << difftime(tend, tstart) << " second(s)." 
+		<< endl << endl;
+
+	tstart = time(0);
+	
+	/* Generate vertex of new mesh */
+	for (int i = 0; i < unknown_indexes.size(); i++)
+	{
+		int p_idx = unknown_indexes(i);
+		v_mesh.segment(3 * p_idx, 3) = new_points.segment(3 * i, 3);
+	}
 
 	/* Update mesh*/
-	updateMesh(_mesh, recons_alphas, _points_state, _color);
+	updateMesh(_mesh, v_mesh, _points_state, _color);
+
+	tend = time(0);
+	cout << "Elapsed time 2: " << difftime(tend, tstart) << " second(s)."
+		<< endl << endl;
+}
+//=============================================================================
+MatrixXf PCA::pinv(const MatrixXf& _m)
+{
+	float TOLERANCE = 1e-10;
+
+	MatrixXf pinv_m;
+	
+	//JacobiSVD<MatrixXf> svd(_m, ComputeFullU | ComputeFullV);
+	//MatrixXf U = svd.matrixU();
+	//MatrixXf V = svd.matrixV();
+	//VectorXf S = svd.singularValues();
+	//VectorXf pinv_S = VectorXf::Zero(S.size());
+	//for (int i = 0; i < S.size(); i++) {
+	//	if (abs(S(i)) > 1e-10) {
+	//		pinv_S(i) = 1 / S(i);
+	//	}
+	//}
+	//pinv_m = V * pinv_S.asDiagonal() * U.transpose();
+
+	JacobiSVD<MatrixXf> svd(_m, ComputeThinU | ComputeThinV);
+	double tolerance = TOLERANCE * max(_m.cols(), _m.rows()) 
+		* svd.singularValues().array().abs()(0);
+	pinv_m = svd.matrixV() *  
+		(svd.singularValues().array().abs() > tolerance)
+		.select(svd.singularValues().array().inverse(), 0)
+		.matrix().asDiagonal() 
+		* svd.matrixU().adjoint();
+
+	return pinv_m;
 }
 //=============================================================================

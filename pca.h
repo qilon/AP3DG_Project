@@ -84,7 +84,8 @@ private:
 	void centerModel();
 	void initAlphas();
 	void initFeatures();
-	void updateMesh(MyMesh& _mesh, const VectorXf& _alphas,
+	void updateMesh(MyMesh& _mesh, const VectorXf& _v_mesh,
 		const VectorXi& _points_state, const MyMesh::Color& _color);
+	MatrixXf pinv(const MatrixXf& _m);
 };
 //=============================================================================
