@@ -12,7 +12,7 @@ const static string FEATURES_URL = "./_data/body_features_no_zeros.dat";
 const static string BODY_FEATURES_URL = "./_data/body_data_features_no_zeros.txt";
 
 // VIEWER TEST PARAMETERS
-const static char* MESH_FILENAME = "./_models/body_data_no_zeros/s1p0.obj";
+const static char* MESH_FILENAME = "./_models/body_data_no_zeros/s58p0.obj";
 
 //=============================================================================
 int main(int argc, char **argv)
