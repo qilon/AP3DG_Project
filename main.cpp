@@ -10,6 +10,7 @@ const static string PCA_MODEL_URL = "./_data/body_pca_model_no_zeros.dat";
 const static string PCA_MODEL_NOISE_URL = "./_data/body_pca_model_no_zeros_noise.dat";
 const static string FEATURES_URL = "./_data/body_features_no_zeros.dat";
 const static string BODY_FEATURES_URL = "./_data/body_data_features_no_zeros.txt";
+const static int GENDER = 1;
 
 // VIEWER TEST PARAMETERS
 const static char* MESH_FILENAME = "./_models/body_data_no_zeros/s58p0.obj";
@@ -22,15 +23,15 @@ int main(int argc, char **argv)
 	//	NUM_MESHES, MODELS_NOISE_URL_PREFFIX);
 
 	// Compute PCA model 
-	//PCA pca = PCA(NUM_MESHES, MODELS_NOISE_URL_PREFFIX, MODELS_URL_SUFFIX, 
-	//	MODELS_URL_FIRST_IDX, PCA_MODEL_NOISE_URL);
+	PCA pca = PCA(NUM_MESHES, MODELS_NOISE_URL_PREFFIX, MODELS_URL_SUFFIX, 
+		MODELS_URL_FIRST_IDX, PCA_MODEL_NOISE_URL, GENDER, BODY_FEATURES_URL);
 
 	// Compute features mapping
 	// Load PCA info only:
 
 	// PCA pca = PCA(PCA_MODEL_NOISE_URL);
 	// Body Data:
-	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
+	pca.computeFeatures(BODY_FEATURES_URL, MODELS_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
 	// pca.computeFeatures(BODY_FEATURES_URL, MODELS_NOISE_URL_PREFFIX, MODELS_URL_SUFFIX, MODELS_URL_FIRST_IDX, FEATURES_URL);
 
 	// Scapecomp:

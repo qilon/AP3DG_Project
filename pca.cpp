@@ -53,6 +53,43 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix,
 	meshes = nullptr;
 }
 //=============================================================================
+PCA::PCA(int _n_meshes, string _ply_models_url_preffix, string _ply_models_url_suffix,
+	int first_index, string _pca_filename_url, int _gender, string _features_data_filename_url) : PCA()
+{
+	MatrixXf featuresMeshes = readFeaturesData(_features_data_filename_url);
+	int n_meshes_gender = 0;
+	MyMesh *meshes = new MyMesh[_n_meshes];
+
+	// Reading meshes:
+	for (int iMesh = 0; iMesh < _n_meshes; iMesh++)
+	{
+		if (featuresMeshes(0, iMesh) == _gender)
+		{
+			string index;
+			stringstream convert;
+			convert << first_index + iMesh;
+			index = convert.str();
+			cout << "Reading mesh #" + index << endl;
+			if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix
+				+ index + _ply_models_url_suffix))
+			{
+				std::cerr << "Cannot read mesh #" + index << std::endl;
+			}
+			n_meshes_gender++;
+		}
+	}
+
+	// Computing PCA
+	computePCA(meshes, n_meshes_gender, _pca_filename_url);
+
+	// Initialize coefficients
+	initAlphas();
+
+	// Deleting meshes
+	delete[] meshes;
+	meshes = nullptr;
+}
+//=============================================================================
 // Destructor
 PCA::~PCA()
 {
@@ -279,6 +316,69 @@ void PCA::computeFeatures(string _features_data_filename_url, string _ply_models
 	VectorXf singularValues = svd.singularValues();
 	MatrixXf M_SigmaInv(MatrixXf::Zero(n_meshes, n_features + 1));
 	for (int i = 0; i < min(n_features + 1, n_meshes); i++) {
+		if (abs(singularValues(i)) > 1e-06) {
+			M_SigmaInv(i, i) = 1 / singularValues(i);
+		}
+	}
+
+	// Calculate conversion matrix
+	MatrixXf featuresInv = V * M_SigmaInv * U.transpose();
+	M_feature2Alpha = alphasMeshes * featuresInv;
+
+	writeFeatures(_feature_filename_url);
+}
+//=============================================================================
+void PCA::computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix,
+	string _ply_models_url_suffix, int first_index, string _feature_filename_url, int _gender) {
+
+	// First: read the features table from a file
+	MatrixXf featuresMeshes = readFeaturesData(_features_data_filename_url);
+	int n_meshes = featuresMeshes.cols();
+
+	int n_meshes_gender = 0;
+	MyMesh *meshes = new MyMesh[n_meshes];
+
+	// Reading meshes:
+	for (int iMesh = 0; iMesh < n_meshes; iMesh++)
+	{
+		if (featuresMeshes(0, iMesh) == _gender)
+		{
+			string index;
+			stringstream convert;
+			convert << first_index + iMesh;
+			index = convert.str();
+			cout << "Reading mesh #" + index << endl;
+			if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix
+				+ index + _ply_models_url_suffix))
+			{
+				std::cerr << "Cannot read mesh #" + index << std::endl;
+			}
+			n_meshes_gender++;
+		}
+	}
+
+	// Compute centered vectors with the coordinates of the vertices
+	int nVert = mean_model.size() / 3;
+	MatrixXf centS(3 * nVert, n_meshes_gender);
+	for (int iMesh = 0; iMesh < n_meshes_gender; iMesh++) {
+		MatrixXf model = mesh2EigenMatrix(meshes[iMesh]);
+		for (int iVert = 0; iVert < nVert; iVert++) {
+			centS(3 * iVert, iMesh) = model(0, iVert) - mean_model(3 * iVert);
+			centS(3 * iVert + 1, iMesh) = model(1, iVert) - mean_model(3 * iVert + 1);
+			centS(3 * iVert + 2, iMesh) = model(2, iVert) - mean_model(3 * iVert + 2);
+		}
+	}
+
+	// Calculate alphas of the mesh
+	MatrixXf alphasMeshes = eigen_vectors.transpose() * centS;
+
+	// Calculate matrix M
+	JacobiSVD<MatrixXf> svd(featuresMeshes, ComputeFullU | ComputeFullV);
+	MatrixXf U = svd.matrixU();
+	MatrixXf V = svd.matrixV();
+	VectorXf singularValues = svd.singularValues();
+	MatrixXf M_SigmaInv(MatrixXf::Zero(n_meshes_gender, n_features + 1));
+	for (int i = 0; i < min(n_features + 1, n_meshes_gender); i++) {
 		if (abs(singularValues(i)) > 1e-06) {
 			M_SigmaInv(i, i) = 1 / singularValues(i);
 		}

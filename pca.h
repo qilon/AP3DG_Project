@@ -44,14 +44,18 @@ class PCA
 {
 public:
 	PCA();
-	PCA(int _n_meshes, string _ply_models_url_preffix, 
-		string _ply_models_url_suffix, int first_index, string _pca_filename_url);
+	PCA(int _n_meshes, string _ply_models_url_preffix, string _ply_models_url_suffix,
+		int first_index, string _pca_filename_url);
+	PCA(int _n_meshes, string _ply_models_url_preffix, string _ply_models_url_suffix,
+		int first_index, string _pca_filename_url, int _gender, string _features_data_filename_url);
 	PCA(string _pca_filename_url, string _features_filename_url);
 	PCA(string _pca_filename_url);
 	virtual ~PCA();
 	void readPCA(string _pca_filename_url);
 	void computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix,
 		string _ply_models_url_suffix, int first_index, string _feature_filename_url);
+	void computeFeatures(string _features_data_filename_url, string _ply_models_url_preffix,
+		string _ply_models_url_suffix, int first_index, string _feature_filename_url, int _gender);
 	void computeFeatures(int _n_meshes, string _ply_models_url_preffix, string _feature_filename_url);
 	void readFeatures(string _features_filename_url);
 	void updateMesh(MyMesh& _mesh);
