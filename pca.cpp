@@ -70,7 +70,7 @@ PCA::PCA(int _n_meshes, string _ply_models_url_preffix, string _ply_models_url_s
 			convert << first_index + iMesh;
 			index = convert.str();
 			cout << "Reading mesh #" + index << endl;
-			if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix
+			if (!OpenMesh::IO::read_mesh(meshes[n_meshes_gender], _ply_models_url_preffix
 				+ index + _ply_models_url_suffix))
 			{
 				std::cerr << "Cannot read mesh #" + index << std::endl;
@@ -348,7 +348,7 @@ void PCA::computeFeatures(string _features_data_filename_url, string _ply_models
 			convert << first_index + iMesh;
 			index = convert.str();
 			cout << "Reading mesh #" + index << endl;
-			if (!OpenMesh::IO::read_mesh(meshes[iMesh], _ply_models_url_preffix
+			if (!OpenMesh::IO::read_mesh(meshes[n_meshes_gender], _ply_models_url_preffix
 				+ index + _ply_models_url_suffix))
 			{
 				std::cerr << "Cannot read mesh #" + index << std::endl;
