@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
 	case SCAPE_DATASET:
 		pca_model_url = "./_data/new_pca_result.dat";
-		features_url = "./_data/features.dat";
+		features_url = "./_data/new_features.dat";
 		models_url_preffix = "_models/scapecomp/mesh";
 		models_url_suffix = ".ply";
 		num_meshes = 71;
