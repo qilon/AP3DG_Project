@@ -52,7 +52,7 @@ PCA GLViewer::pca = PCA();
 MyMesh GLViewer::mesh;
 float* GLViewer::features;
 float* GLViewer::alphas;
-int GLViewer::mode = RECONSTRUCT_MODE;
+int GLViewer::mode = GENERATE_MODE;
 MyMesh GLViewer::recons_mesh;
 VectorXi GLViewer::points_state;
 int GLViewer::remove_vertex_index = REMOVE_VERTEX_INDEX;
@@ -225,8 +225,8 @@ void GLViewer::initGLUIAlphas(VectorXf _alphas)
 
 	if (mode == GENERATE_MODE)
 	{
-		alphas_rollout->open();
 		alphas_rollout->enable();
+		alphas_rollout->close();
 	}
 	else // RECONSTRUCT_MODE
 	{
@@ -656,8 +656,8 @@ void GLViewer::updateMode()
 		mode = GENERATE_MODE;
 		features_rollout->open();
 		features_rollout->enable();
-		alphas_rollout->open();
 		alphas_rollout->enable();
+		alphas_rollout->close();
 		recons_rollout->disable();
 		recons_rollout->close();
 		glui_modeButton->set_name(RECONSTRUCT_MODE_TEXT);
@@ -781,6 +781,7 @@ void GLViewer::loadMesh(string _mesh_filename)
 void GLViewer::loadPCA(string _pca_filename, string _features_filename)
 {
 	pca.readPCA(_pca_filename);
+
 	pca.readFeatures(_features_filename);
 
 	// Update mesh based on the pca
